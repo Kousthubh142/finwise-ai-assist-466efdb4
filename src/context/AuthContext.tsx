@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User } from '../models/user';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { User } from '../models/User';
 import { api } from '../services/api';
 
 type AuthContextType = {
@@ -19,12 +20,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // Check if user is stored in localStorage (simulating persistence)
-    const storedUser = localStorage.getItem('finWiseUser');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
+    // Check if user is stored in AsyncStorage
+    const loadUser = async () => {
+      try {
+        const storedUser = await AsyncStorage.getItem('finWiseUser');
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        }
+      } catch (error) {
+        console.error('Failed to load user from storage:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadUser();
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -32,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const userData = await api.login(email, password);
       setUser(userData);
-      localStorage.setItem('finWiseUser', JSON.stringify(userData));
+      await AsyncStorage.setItem('finWiseUser', JSON.stringify(userData));
     } catch (error) {
       console.error('Login failed:', error);
       throw error;
@@ -46,7 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const newUser = await api.register(userData);
       setUser(newUser);
-      localStorage.setItem('finWiseUser', JSON.stringify(newUser));
+      await AsyncStorage.setItem('finWiseUser', JSON.stringify(newUser));
     } catch (error) {
       console.error('Registration failed:', error);
       throw error;
@@ -55,9 +65,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
     setUser(null);
-    localStorage.removeItem('finWiseUser');
+    await AsyncStorage.removeItem('finWiseUser');
   };
 
   return (
