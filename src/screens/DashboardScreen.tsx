@@ -1,7 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, RefreshControl } from 'react-native';
-import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/Card';
 import { ProgressBar } from '../components/ProgressBar';
@@ -10,9 +8,20 @@ import { Transaction } from '../models/Transaction';
 import { Budget, BudgetSummary } from '../models/Budget';
 import { SavingsGoal } from '../models/Goal';
 import { AiTip } from '../models/AiTip';
+import { 
+  ArrowDownLeft,
+  ArrowUpRight,
+  Home,
+  List,
+  PieChart,
+  Target,
+  MessageCircle,
+  RefreshCw,
+  PlusCircle 
+} from 'lucide-react';
 
 interface DashboardScreenProps {
-  navigation: any;
+  navigation?: any;
 }
 
 const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
@@ -89,372 +98,168 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
     .slice(0, 3);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>Hello, {user?.name?.split(' ')[0]}</Text>
-            <Text style={styles.subGreeting}>Here's your financial overview</Text>
-          </View>
-        </View>
+    <div className="p-4 max-w-4xl mx-auto">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">
+          Hello, {user?.name?.split(' ')[0]}
+        </h1>
+        <p className="text-gray-600">Here's your financial overview</p>
+      </div>
 
-        {/* Quick stats cards */}
-        <View style={styles.statsContainer}>
-          <Card style={styles.statCard}>
-            <Text style={styles.statLabel}>Total Balance</Text>
-            <Text style={styles.statValue}>{formatCurrency(12345.67)}</Text>
-          </Card>
-          
-          <Card style={styles.statCard}>
-            <Text style={styles.statLabel}>Monthly Income</Text>
-            <Text style={[styles.statValue, styles.incomeValue]}>{formatCurrency(4500)}</Text>
-          </Card>
-          
-          <Card style={styles.statCard}>
-            <Text style={styles.statLabel}>Monthly Spending</Text>
-            <Text style={styles.statValue}>{formatCurrency(budgetSummary?.totalSpent || 0)}</Text>
-          </Card>
-        </View>
-
-        {/* Budget overview */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Budget Overview</Text>
-            <TouchableOpacity 
-              style={styles.sectionButton}
-              onPress={() => navigation.navigate('Budget')}
-            >
-              <Feather name="arrow-up-right" size={16} color="#8B5CF6" />
-              <Text style={styles.sectionButtonText}>Details</Text>
-            </TouchableOpacity>
-          </View>
-          
-          <Card>
-            {budgetSummary?.categories.slice(0, 3).map((budget, index) => (
-              <View key={index} style={styles.budgetItem}>
-                <View style={styles.budgetHeader}>
-                  <Text style={styles.budgetCategory}>
-                    {budget.category.charAt(0).toUpperCase() + budget.category.slice(1)}
-                  </Text>
-                  <Text style={styles.budgetValues}>
-                    {formatCurrency(budget.spent)} / {formatCurrency(budget.limit)}
-                  </Text>
-                </View>
-                <ProgressBar 
-                  progress={budget.percentUsed} 
-                  progressColor={(progress) => {
-                    if (progress < 70) return '#8B5CF6';
-                    if (progress < 90) return '#F59E0B';
-                    return '#EF4444';
-                  }}
-                />
-              </View>
-            ))}
-          </Card>
-        </View>
-
-        {/* Recent Transactions */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent Transactions</Text>
-            <TouchableOpacity 
-              style={styles.sectionButton}
-              onPress={() => navigation.navigate('Transactions')}
-            >
-              <Feather name="arrow-up-right" size={16} color="#8B5CF6" />
-              <Text style={styles.sectionButtonText}>All Transactions</Text>
-            </TouchableOpacity>
-          </View>
-          
-          <Card>
-            {recentTransactions.map((transaction, index) => (
-              <View key={index} style={[styles.transactionItem, index !== recentTransactions.length - 1 && styles.borderBottom]}>
-                <View style={styles.transactionIcon}>
-                  <Feather 
-                    name={transaction.isIncome ? "arrow-down-left" : "arrow-up-right"} 
-                    size={20} 
-                    color={transaction.isIncome ? "#10B981" : "#EF4444"} 
-                  />
-                </View>
-                <View style={styles.transactionDetails}>
-                  <Text style={styles.transactionDescription}>{transaction.description}</Text>
-                  <Text style={styles.transactionCategory}>{transaction.category}</Text>
-                </View>
-                <View style={styles.transactionAmount}>
-                  <Text style={[
-                    styles.transactionValue,
-                    transaction.isIncome ? styles.incomeText : styles.expenseText
-                  ]}>
-                    {transaction.isIncome ? '+' : '-'}{formatCurrency(transaction.amount)}
-                  </Text>
-                  <Text style={styles.transactionDate}>
-                    {new Date(transaction.date).toLocaleDateString()}
-                  </Text>
-                </View>
-              </View>
-            ))}
-            
-            {recentTransactions.length === 0 && (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyStateText}>No transactions yet</Text>
-                <TouchableOpacity 
-                  style={styles.addButton}
-                  onPress={() => navigation.navigate('AddTransaction')}
-                >
-                  <Feather name="plus-circle" size={16} color="#FFFFFF" />
-                  <Text style={styles.addButtonText}>Add Transaction</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </Card>
-        </View>
+      {/* Quick stats cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white p-4 rounded-lg shadow">
+          <p className="text-sm text-gray-500 mb-1">Total Balance</p>
+          <p className="text-xl font-bold">{formatCurrency(12345.67)}</p>
+        </div>
         
-        {/* Financial Insights */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Financial Insights</Text>
-            <TouchableOpacity 
-              style={styles.refreshButton}
-              onPress={onRefresh}
+        <div className="bg-white p-4 rounded-lg shadow">
+          <p className="text-sm text-gray-500 mb-1">Monthly Income</p>
+          <p className="text-xl font-bold text-purple-600">{formatCurrency(4500)}</p>
+        </div>
+        
+        <div className="bg-white p-4 rounded-lg shadow">
+          <p className="text-sm text-gray-500 mb-1">Monthly Spending</p>
+          <p className="text-xl font-bold">{formatCurrency(budgetSummary?.totalSpent || 0)}</p>
+        </div>
+      </div>
+
+      {/* Budget overview */}
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-gray-900">Budget Overview</h2>
+          <button 
+            className="flex items-center bg-gray-100 text-purple-600 px-3 py-1 rounded-lg"
+            onClick={() => navigation?.navigate('Budget')}
+          >
+            <ArrowUpRight className="w-4 h-4 mr-1" />
+            <span>Details</span>
+          </button>
+        </div>
+        
+        <div className="bg-white p-4 rounded-lg shadow">
+          {budgetSummary?.categories.slice(0, 3).map((budget, index) => (
+            <div key={index} className="mb-4">
+              <div className="flex justify-between mb-2">
+                <span className="text-gray-700 capitalize">
+                  {budget.category.charAt(0).toUpperCase() + budget.category.slice(1)}
+                </span>
+                <span className="text-gray-600">
+                  {formatCurrency(budget.spent)} / {formatCurrency(budget.limit)}
+                </span>
+              </div>
+              <ProgressBar 
+                progress={budget.percentUsed} 
+                progressColor={(progress) => {
+                  if (progress < 70) return '#8B5CF6';
+                  if (progress < 90) return '#F59E0B';
+                  return '#EF4444';
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Recent Transactions */}
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-gray-900">Recent Transactions</h2>
+          <button 
+            className="flex items-center bg-gray-100 text-purple-600 px-3 py-1 rounded-lg"
+            onClick={() => navigation?.navigate('Transactions')}
+          >
+            <ArrowUpRight className="w-4 h-4 mr-1" />
+            <span>All Transactions</span>
+          </button>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          {recentTransactions.map((transaction, index) => (
+            <div 
+              key={index} 
+              className={`flex items-center p-4 ${
+                index !== recentTransactions.length - 1 ? 'border-b border-gray-200' : ''
+              }`}
             >
-              <Feather name="refresh-cw" size={16} color="#8B5CF6" />
-            </TouchableOpacity>
-          </View>
+              <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mr-3">
+                {transaction.isIncome ? (
+                  <ArrowDownLeft className="w-5 h-5 text-green-500" />
+                ) : (
+                  <ArrowUpRight className="w-5 h-5 text-red-500" />
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="text-gray-800 font-medium">{transaction.description}</p>
+                <p className="text-sm text-gray-500">{transaction.category}</p>
+              </div>
+              <div className="text-right">
+                <p className={`font-semibold ${
+                  transaction.isIncome ? 'text-green-500' : 'text-red-500'
+                }`}>
+                  {transaction.isIncome ? '+' : '-'}{formatCurrency(transaction.amount)}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {new Date(transaction.date).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+          ))}
           
-          <Card>
-            {tips.filter(tip => !tip.isRead).slice(0, 2).map((tip, index) => (
-              <View key={index} style={[styles.tipItem, index !== 0 && styles.borderTop]}>
-                <View style={styles.tipHeader}>
-                  <Text style={styles.tipCategory}>{tip.category}</Text>
-                  <View style={styles.tipBadge}>
-                    <Text style={styles.tipBadgeText}>New</Text>
-                  </View>
-                </View>
-                <Text style={styles.tipContent}>{tip.content}</Text>
-              </View>
-            ))}
-            
-            {tips.filter(tip => !tip.isRead).length === 0 && (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyStateText}>
-                  No new insights available. Check back later!
-                </Text>
-              </View>
-            )}
-          </Card>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+          {recentTransactions.length === 0 && (
+            <div className="p-6 text-center">
+              <p className="text-gray-500 mb-4">No transactions yet</p>
+              <button 
+                className="bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center mx-auto"
+                onClick={() => navigation?.navigate('AddTransaction')}
+              >
+                <PlusCircle className="w-4 h-4 mr-2" />
+                <span>Add Transaction</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Financial Insights */}
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-gray-900">Financial Insights</h2>
+          <button 
+            className="bg-gray-100 text-purple-600 p-2 rounded-lg"
+            onClick={onRefresh}
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          {tips.filter(tip => !tip.isRead).slice(0, 2).map((tip, index) => (
+            <div 
+              key={index} 
+              className={`p-4 ${index !== 0 ? 'border-t border-gray-200' : ''}`}
+            >
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-purple-600 font-medium capitalize">{tip.category}</span>
+                <span className="bg-purple-100 text-purple-600 text-xs px-2 py-1 rounded-full">
+                  New
+                </span>
+              </div>
+              <p className="text-gray-700 leading-relaxed">{tip.content}</p>
+            </div>
+          ))}
+          
+          {tips.filter(tip => !tip.isRead).length === 0 && (
+            <div className="p-6 text-center">
+              <p className="text-gray-500">
+                No new insights available. Check back later!
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 80, // For bottom tab navigation
-  },
-  header: {
-    marginBottom: 24,
-  },
-  greeting: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
-  },
-  subGreeting: {
-    fontSize: 16,
-    color: '#6B7280',
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    marginBottom: 24,
-  },
-  statCard: {
-    flex: 1,
-    marginHorizontal: 4,
-    padding: 12,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 4,
-  },
-  statValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#111827',
-  },
-  incomeValue: {
-    color: '#8B5CF6',
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  sectionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F3F4F6',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-  },
-  sectionButtonText: {
-    fontSize: 14,
-    color: '#8B5CF6',
-    marginLeft: 4,
-  },
-  refreshButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: '#F3F4F6',
-  },
-  budgetItem: {
-    marginBottom: 16,
-  },
-  budgetHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 6,
-  },
-  budgetCategory: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#4B5563',
-  },
-  budgetValues: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  transactionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  borderBottom: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  borderTop: {
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-  },
-  transactionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  transactionDetails: {
-    flex: 1,
-  },
-  transactionDescription: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  transactionCategory: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  transactionAmount: {
-    alignItems: 'flex-end',
-  },
-  transactionValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  incomeText: {
-    color: '#10B981',
-  },
-  expenseText: {
-    color: '#EF4444',
-  },
-  transactionDate: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  tipItem: {
-    paddingVertical: 12,
-  },
-  tipHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  tipCategory: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#8B5CF6',
-    textTransform: 'capitalize',
-  },
-  tipBadge: {
-    backgroundColor: '#EDE9FE',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-  },
-  tipBadgeText: {
-    fontSize: 12,
-    color: '#8B5CF6',
-  },
-  tipContent: {
-    fontSize: 14,
-    color: '#4B5563',
-    lineHeight: 20,
-  },
-  emptyState: {
-    padding: 24,
-    alignItems: 'center',
-  },
-  emptyStateText: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#8B5CF6',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  addButtonText: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    marginLeft: 8,
-  },
-});
 
 export default DashboardScreen;

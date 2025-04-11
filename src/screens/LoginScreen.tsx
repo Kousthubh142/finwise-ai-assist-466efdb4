@@ -1,16 +1,11 @@
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Image } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { Button } from '../components/Button';
+import { useNavigate } from 'react-router-dom';
 import { Input } from '../components/Input';
-import { Feather } from '@expo/vector-icons';
+import { Moon, Mail, Lock, User } from 'lucide-react';
 
-interface LoginScreenProps {
-  navigation: any;
-}
-
-const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
+const LoginScreen: React.FC = () => {
   const [email, setEmail] = useState('demo@example.com');
   const [password, setPassword] = useState('demopassword');
   const [name, setName] = useState('');
@@ -19,6 +14,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [errors, setErrors] = useState<{ email?: string; password?: string; name?: string }>({});
   
   const { login, register } = useAuth();
+  const navigate = useNavigate();
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string; name?: string } = {};
@@ -64,7 +60,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     setIsSubmitting(true);
     try {
       await register({ name, email });
-      navigation.navigate('Onboarding');
+      navigate('/onboarding');
     } catch (error) {
       console.error('Registration error:', error);
       setErrors({ email: 'Failed to create account' });
@@ -74,257 +70,156 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.container}>
-          <View style={styles.header}>
-            <Text style={styles.appName}>FinWise</Text>
-            <TouchableOpacity 
-              style={styles.themeToggle}
-              onPress={() => console.log('Theme toggle pressed')}
-            >
-              <Feather name="moon" size={20} color="#6B7280" />
-            </TouchableOpacity>
-          </View>
+    <div className="min-h-screen bg-gray-50 flex flex-col p-4">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-2xl font-bold text-purple-600">FinWise</h1>
+        <button 
+          className="p-2 bg-gray-100 rounded-lg"
+          onClick={() => console.log('Theme toggle pressed')}
+        >
+          <Moon className="w-5 h-5 text-gray-600" />
+        </button>
+      </div>
 
-          <View style={styles.card}>
-            <View style={styles.tabs}>
-              <TouchableOpacity
-                style={[styles.tab, activeTab === 'login' && styles.activeTab]}
-                onPress={() => setActiveTab('login')}
+      <div className="bg-white rounded-xl shadow-md overflow-hidden max-w-md w-full mx-auto">
+        <div className="flex border-b border-gray-200">
+          <button
+            className={`flex-1 py-4 text-center ${
+              activeTab === 'login' 
+                ? 'text-purple-600 border-b-2 border-purple-600 font-medium' 
+                : 'text-gray-500'
+            }`}
+            onClick={() => setActiveTab('login')}
+          >
+            Login
+          </button>
+          <button
+            className={`flex-1 py-4 text-center ${
+              activeTab === 'register' 
+                ? 'text-purple-600 border-b-2 border-purple-600 font-medium' 
+                : 'text-gray-500'
+            }`}
+            onClick={() => setActiveTab('register')}
+          >
+            Register
+          </button>
+        </div>
+
+        <div className="p-6">
+          {activeTab === 'login' ? (
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">Welcome back</h2>
+              <p className="text-gray-500 mb-6">
+                Enter your credentials below to access your account
+              </p>
+
+              <Input
+                label="Email"
+                value={email}
+                onChangeText={setEmail}
+                placeholder="you@example.com"
+                keyboardType="email-address"
+                error={errors.email}
+                leftIcon={<Mail className="w-5 h-5 text-gray-400" />}
+              />
+
+              <Input
+                label="Password"
+                value={password}
+                onChangeText={setPassword}
+                placeholder="••••••••"
+                secureTextEntry
+                error={errors.password}
+                leftIcon={<Lock className="w-5 h-5 text-gray-400" />}
+              />
+
+              <div className="flex justify-end mb-6">
+                <button className="text-sm text-purple-600">
+                  Forgot password?
+                </button>
+              </div>
+
+              <button
+                className={`w-full py-3 rounded-lg font-medium ${
+                  isSubmitting 
+                    ? 'bg-purple-400 text-white' 
+                    : 'bg-purple-600 text-white hover:bg-purple-700'
+                }`}
+                onClick={handleLogin}
+                disabled={isSubmitting}
               >
-                <Text
-                  style={[
-                    styles.tabText,
-                    activeTab === 'login' && styles.activeTabText,
-                  ]}
-                >
-                  Login
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.tab, activeTab === 'register' && styles.activeTab]}
-                onPress={() => setActiveTab('register')}
+                {isSubmitting ? 'Logging in...' : 'Login'}
+              </button>
+            </div>
+          ) : (
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">Create an account</h2>
+              <p className="text-gray-500 mb-6">
+                Enter your information to get started
+              </p>
+
+              <Input
+                label="Full Name"
+                value={name}
+                onChangeText={setName}
+                placeholder="John Doe"
+                error={errors.name}
+                leftIcon={<User className="w-5 h-5 text-gray-400" />}
+              />
+
+              <Input
+                label="Email"
+                value={email}
+                onChangeText={setEmail}
+                placeholder="you@example.com"
+                keyboardType="email-address"
+                error={errors.email}
+                leftIcon={<Mail className="w-5 h-5 text-gray-400" />}
+              />
+
+              <Input
+                label="Password"
+                value={password}
+                onChangeText={setPassword}
+                placeholder="••••••••"
+                secureTextEntry
+                error={errors.password}
+                leftIcon={<Lock className="w-5 h-5 text-gray-400" />}
+              />
+
+              <button
+                className={`w-full py-3 rounded-lg font-medium ${
+                  isSubmitting 
+                    ? 'bg-purple-400 text-white' 
+                    : 'bg-purple-600 text-white hover:bg-purple-700'
+                }`}
+                onClick={handleRegister}
+                disabled={isSubmitting}
               >
-                <Text
-                  style={[
-                    styles.tabText,
-                    activeTab === 'register' && styles.activeTabText,
-                  ]}
-                >
-                  Register
-                </Text>
-              </TouchableOpacity>
-            </View>
+                {isSubmitting ? 'Creating account...' : 'Create account'}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
 
-            {activeTab === 'login' ? (
-              <View style={styles.form}>
-                <Text style={styles.title}>Welcome back</Text>
-                <Text style={styles.subtitle}>
-                  Enter your credentials below to access your account
-                </Text>
-
-                <Input
-                  label="Email"
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="you@example.com"
-                  keyboardType="email-address"
-                  error={errors.email}
-                  leftIcon={<Feather name="mail" size={18} color="#6B7280" />}
-                />
-
-                <Input
-                  label="Password"
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="••••••••"
-                  secureTextEntry
-                  error={errors.password}
-                  leftIcon={<Feather name="lock" size={18} color="#6B7280" />}
-                />
-
-                <TouchableOpacity style={styles.forgotPassword}>
-                  <Text style={styles.forgotPasswordText}>Forgot password?</Text>
-                </TouchableOpacity>
-
-                <Button
-                  title={isSubmitting ? 'Logging in...' : 'Login'}
-                  onPress={handleLogin}
-                  disabled={isSubmitting}
-                  loading={isSubmitting}
-                  style={styles.button}
-                />
-              </View>
-            ) : (
-              <View style={styles.form}>
-                <Text style={styles.title}>Create an account</Text>
-                <Text style={styles.subtitle}>
-                  Enter your information to get started
-                </Text>
-
-                <Input
-                  label="Full Name"
-                  value={name}
-                  onChangeText={setName}
-                  placeholder="John Doe"
-                  error={errors.name}
-                  leftIcon={<Feather name="user" size={18} color="#6B7280" />}
-                />
-
-                <Input
-                  label="Email"
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="you@example.com"
-                  keyboardType="email-address"
-                  error={errors.email}
-                  leftIcon={<Feather name="mail" size={18} color="#6B7280" />}
-                />
-
-                <Input
-                  label="Password"
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="••••••••"
-                  secureTextEntry
-                  error={errors.password}
-                  leftIcon={<Feather name="lock" size={18} color="#6B7280" />}
-                />
-
-                <Button
-                  title={isSubmitting ? 'Creating account...' : 'Create account'}
-                  onPress={handleRegister}
-                  disabled={isSubmitting}
-                  loading={isSubmitting}
-                  style={styles.button}
-                />
-              </View>
-            )}
-          </View>
-
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              Demo credentials are pre-filled for you.
-            </Text>
-            <TouchableOpacity
-              onPress={() => {
-                setEmail('demo@example.com');
-                setPassword('demopassword');
-                setActiveTab('login');
-              }}
-            >
-              <Text style={styles.demoLink}>Use demo account</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+      <div className="mt-8 text-center">
+        <p className="text-gray-500 mb-2">
+          Demo credentials are pre-filled for you.
+        </p>
+        <button
+          className="text-purple-600 font-medium"
+          onClick={() => {
+            setEmail('demo@example.com');
+            setPassword('demopassword');
+            setActiveTab('login');
+          }}
+        >
+          Use demo account
+        </button>
+      </div>
+    </div>
   );
 };
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
-  scrollContainer: {
-    flexGrow: 1,
-  },
-  container: {
-    flex: 1,
-    padding: 20,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  appName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#8B5CF6',
-  },
-  themeToggle: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: '#F3F4F6',
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    overflow: 'hidden',
-  },
-  tabs: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  activeTab: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#8B5CF6',
-  },
-  tabText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#6B7280',
-  },
-  activeTabText: {
-    color: '#8B5CF6',
-  },
-  form: {
-    padding: 24,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 24,
-  },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    marginBottom: 24,
-  },
-  forgotPasswordText: {
-    fontSize: 14,
-    color: '#8B5CF6',
-  },
-  button: {
-    marginTop: 8,
-  },
-  footer: {
-    marginTop: 32,
-    alignItems: 'center',
-  },
-  footerText: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 8,
-  },
-  demoLink: {
-    fontSize: 14,
-    color: '#8B5CF6',
-    fontWeight: '500',
-  },
-});
 
 export default LoginScreen;

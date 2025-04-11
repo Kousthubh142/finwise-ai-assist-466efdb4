@@ -192,11 +192,68 @@ export const api = {
     });
   },
   
+  createBudget: async (budget: Partial<Budget>): Promise<Budget> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const newBudget = {
+          ...budget,
+          id: 'b' + Math.floor(Math.random() * 1000),
+          userId: 'user1',
+          startDate: new Date(),
+          isActive: true,
+          currentSpent: 0
+        } as Budget;
+        
+        dummyBudgets.push(newBudget);
+        resolve(newBudget);
+      }, 500);
+    });
+  },
+  
   // Savings Goal services
   getSavingsGoals: async (): Promise<SavingsGoal[]> => {
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve([...dummyGoals]);
+      }, 500);
+    });
+  },
+  
+  createSavingsGoal: async (goal: Partial<SavingsGoal>): Promise<SavingsGoal> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const newGoal = {
+          ...goal,
+          id: 'g' + Math.floor(Math.random() * 1000),
+          userId: 'user1',
+          currentAmount: 0,
+          isCompleted: false,
+          createdAt: new Date()
+        } as SavingsGoal;
+        
+        dummyGoals.push(newGoal);
+        resolve(newGoal);
+      }, 500);
+    });
+  },
+  
+  updateSavingsGoal: async (goalId: string, amount: number): Promise<SavingsGoal> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const goalIndex = dummyGoals.findIndex(g => g.id === goalId);
+        if (goalIndex !== -1) {
+          const updatedGoal = { ...dummyGoals[goalIndex] };
+          updatedGoal.currentAmount += amount;
+          
+          if (updatedGoal.currentAmount >= updatedGoal.targetAmount) {
+            updatedGoal.isCompleted = true;
+          }
+          
+          dummyGoals[goalIndex] = updatedGoal;
+          resolve(updatedGoal);
+        } else {
+          throw new Error('Goal not found');
+        }
       }, 500);
     });
   },
@@ -215,6 +272,29 @@ export const api = {
       setTimeout(() => {
         resolve([...dummyMessages]);
       }, 500);
+    });
+  },
+  
+  sendChatMessage: async (content: string): Promise<ChatMessage[]> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const userMessage: ChatMessage = {
+          id: 'msg' + Math.floor(Math.random() * 1000),
+          content,
+          sender: 'user',
+          timestamp: new Date()
+        };
+        
+        const aiMessage: ChatMessage = {
+          id: 'msg' + Math.floor(Math.random() * 1000),
+          content: 'Thank you for your message. I\'ll analyze your finances and provide insights shortly.',
+          sender: 'ai',
+          timestamp: new Date(Date.now() + 1000)
+        };
+        
+        dummyMessages.push(userMessage, aiMessage);
+        resolve([...dummyMessages]);
+      }, 800);
     });
   }
 };

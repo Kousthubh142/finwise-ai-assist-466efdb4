@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { View, TextInput, Text, StyleSheet, TouchableOpacity, ViewStyle, TextStyle } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { cn } from '@/lib/utils';
+import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
 
 interface InputProps {
   value: string;
@@ -11,8 +11,8 @@ interface InputProps {
   secureTextEntry?: boolean;
   error?: string;
   disabled?: boolean;
-  style?: ViewStyle;
-  inputStyle?: TextStyle;
+  style?: React.CSSProperties;
+  inputStyle?: React.CSSProperties;
   keyboardType?: 'default' | 'number-pad' | 'decimal-pad' | 'numeric' | 'email-address' | 'phone-pad';
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
@@ -45,119 +45,93 @@ export const Input: React.FC<InputProps> = ({
     setShowPassword(!showPassword);
   };
 
+  const getIconForType = (type: string) => {
+    switch (type) {
+      case 'mail':
+        return <Mail className="h-5 w-5 text-gray-400" />;
+      case 'lock':
+        return <Lock className="h-5 w-5 text-gray-400" />;
+      case 'user':
+        return <User className="h-5 w-5 text-gray-400" />;
+      default:
+        return null;
+    }
+  };
+
+  // Convert leftIcon from string to component if needed
+  const leftIconComponent = typeof leftIcon === 'string' 
+    ? getIconForType(leftIcon as string) 
+    : leftIcon;
+
   return (
-    <View style={[styles.container, style]}>
-      {label && <Text style={styles.label}>{label}</Text>}
+    <div className="mb-4" style={style}>
+      {label && (
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {label}
+        </label>
+      )}
       
-      <View
-        style={[
-          styles.inputContainer,
-          isFocused && styles.focused,
-          error ? styles.error : null,
-          disabled && styles.disabled
-        ]}
+      <div 
+        className={cn(
+          "relative flex items-center border rounded-md overflow-hidden",
+          isFocused ? "border-primary ring-1 ring-primary" : "border-gray-300",
+          error ? "border-red-500" : "",
+          disabled ? "bg-gray-100 opacity-70" : "bg-white"
+        )}
       >
-        {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
+        {leftIconComponent && (
+          <div className="pl-3">
+            {leftIconComponent}
+          </div>
+        )}
         
-        <TextInput
-          style={[
-            styles.input,
-            leftIcon && styles.inputWithLeftIcon,
-            (rightIcon || secureTextEntry) && styles.inputWithRightIcon,
+        <input
+          className={cn(
+            "w-full px-3 py-2 outline-none text-gray-800",
+            leftIconComponent ? "pl-2" : "",
+            (rightIcon || secureTextEntry) ? "pr-10" : "",
+            multiline ? "h-auto" : "h-10",
             inputStyle
-          ]}
+          )}
           value={value}
-          onChangeText={onChangeText}
+          onChange={(e) => onChangeText(e.target.value)}
           placeholder={placeholder}
-          placeholderTextColor="#9CA3AF"
-          secureTextEntry={secureTextEntry && !showPassword}
-          editable={!disabled}
-          keyboardType={keyboardType}
-          multiline={multiline}
-          numberOfLines={multiline ? numberOfLines : 1}
+          type={secureTextEntry && !showPassword ? "password" : keyboardType === 'numeric' || keyboardType === 'decimal-pad' || keyboardType === 'number-pad' ? "number" : keyboardType === 'email-address' ? "email" : "text"}
+          disabled={disabled}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
+          style={inputStyle}
         />
         
         {secureTextEntry && (
-          <TouchableOpacity
-            style={styles.rightIcon}
-            onPress={togglePasswordVisibility}
+          <button
+            type="button"
+            className="absolute right-3 p-1"
+            onClick={togglePasswordVisibility}
           >
-            <Feather
-              name={showPassword ? 'eye-off' : 'eye'}
-              size={20}
-              color="#6B7280"
-            />
-          </TouchableOpacity>
+            {showPassword ? (
+              <EyeOff className="h-5 w-5 text-gray-400" />
+            ) : (
+              <Eye className="h-5 w-5 text-gray-400" />
+            )}
+          </button>
         )}
         
         {rightIcon && !secureTextEntry && (
-          <TouchableOpacity
-            style={styles.rightIcon}
-            onPress={onRightIconPress}
+          <button
+            type="button"
+            className="absolute right-3 p-1"
+            onClick={onRightIconPress}
             disabled={!onRightIconPress}
           >
             {rightIcon}
-          </TouchableOpacity>
+          </button>
         )}
-      </View>
+      </div>
       
-      {error && <Text style={styles.errorText}>{error}</Text>}
-    </View>
+      {error && (
+        <p className="mt-1 text-sm text-red-500">{error}</p>
+      )}
+    </div>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 6,
-    color: '#374151',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    backgroundColor: '#FFFFFF',
-  },
-  focused: {
-    borderColor: '#8B5CF6',
-  },
-  error: {
-    borderColor: '#EF4444',
-  },
-  disabled: {
-    backgroundColor: '#F3F4F6',
-    opacity: 0.7,
-  },
-  input: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: '#1F2937',
-  },
-  inputWithLeftIcon: {
-    paddingLeft: 8,
-  },
-  inputWithRightIcon: {
-    paddingRight: 8,
-  },
-  leftIcon: {
-    paddingLeft: 12,
-  },
-  rightIcon: {
-    paddingRight: 12,
-  },
-  errorText: {
-    color: '#EF4444',
-    fontSize: 12,
-    marginTop: 4,
-  },
-});
