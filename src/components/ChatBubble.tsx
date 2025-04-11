@@ -1,5 +1,5 @@
 
-import { ChatMessage } from '@/models/aiTip';
+import { ChatMessage } from '@/models/AiTip';
 import { cn } from '@/lib/utils';
 import { formatTime } from '@/lib/utils';
 

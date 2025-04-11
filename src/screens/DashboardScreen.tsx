@@ -4,8 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/Card';
 import { ProgressBar } from '../components/ProgressBar';
 import { api } from '../services/api';
-import { Transaction } from '../models/Transaction';
-import { Budget, BudgetSummary } from '../models/Budget';
+import { Transaction } from '../models/transaction';
+import { Budget, BudgetSummary } from '../models/budget';
 import { SavingsGoal } from '../models/Goal';
 import { AiTip } from '../models/AiTip';
 import { 
