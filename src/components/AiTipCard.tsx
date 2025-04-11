@@ -1,6 +1,6 @@
 
 import { Card, CardContent } from '@/components/ui/card';
-import { AiTip } from '@/models/aiTip';
+import { AiTip } from '@/models/AiTip';
 import { Lightbulb, BarChart, PiggyBank, DollarSign, Target, Coins } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 

@@ -1,8 +1,8 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { User } from '../models/User';
-import { Transaction } from '../models/Transaction';
-import { Budget } from '../models/Budget';
+import { User } from '../models/user';
+import { Transaction } from '../models/transaction';
+import { Budget } from '../models/budget';
 import { SavingsGoal } from '../models/Goal';
 import { AiTip, ChatMessage } from '../models/AiTip';
 

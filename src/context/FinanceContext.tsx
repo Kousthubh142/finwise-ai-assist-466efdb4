@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Transaction, TransactionCategory } from '../models/Transaction';
-import { Budget, BudgetSummary } from '../models/Budget';
+import { Transaction, TransactionCategory } from '../models/transaction';
+import { Budget, BudgetSummary } from '../models/budget';
 import { SavingsGoal } from '../models/Goal';
 import { AiTip, ChatMessage } from '../models/AiTip';
 import { api } from '../services/api';

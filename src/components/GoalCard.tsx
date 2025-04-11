@@ -1,7 +1,7 @@
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { SavingsGoal } from '@/models/goal';
+import { SavingsGoal } from '@/models/Goal';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Plus, Check } from 'lucide-react';
