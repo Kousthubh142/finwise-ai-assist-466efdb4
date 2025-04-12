@@ -61,7 +61,14 @@ export function LayoutWrapper() {
                 </div>
               </div>
               
-              <div className="flex-1"></div>
+              {/* Center logo for mobile view */}
+              <div className="flex-1 flex justify-center md:justify-start">
+                <h1 className="text-xl font-bold md:hidden relative">
+                  <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                    FinWise
+                  </span>
+                </h1>
+              </div>
               
               <div className="flex items-center gap-2">
                 {mounted && <ThemeToggle />}

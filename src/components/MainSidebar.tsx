@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, BarChart2, PlusCircle, Target, MessageSquare, Sparkles } from 'lucide-react';
+import { Home, BarChart2, PlusCircle, Target, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Sidebar,
@@ -31,11 +30,10 @@ export function MainSidebar() {
   return (
     <Sidebar className="border-r border-border/50 backdrop-blur-sm bg-sidebar/80">
       <SidebarHeader className="flex items-center justify-between px-4 h-16">
-        <h1 className="text-xl font-bold relative group">
+        <h1 className="text-xl font-bold">
           <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
             FinWise
           </span>
-          <Sparkles className="w-5 h-5 text-yellow-400 absolute -top-3 -right-4 animate-pulse-soft" />
         </h1>
       </SidebarHeader>
       
