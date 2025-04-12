@@ -2,8 +2,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Transaction, TransactionCategory } from '../models/transaction';
 import { Budget, BudgetSummary } from '../models/budget';
-import { SavingsGoal } from '../models/Goal';
-import { AiTip, ChatMessage } from '../models/AiTip';
+import { SavingsGoal } from '../models/goal';
+import { AiTip, ChatMessage } from '../models/aiTip';
 import { api } from '../services/api';
 import { useToast } from '@/components/ui/use-toast';
 
