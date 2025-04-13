@@ -1,7 +1,9 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../models/user';
-import { api } from '../services/api';
+import { supabase } from '@/integrations/supabase/client';
+import { Session } from '@supabase/supabase-js';
+import { useToast } from '@/components/ui/use-toast';
 
 type AuthContextType = {
   user: User | null;
@@ -9,55 +11,146 @@ type AuthContextType = {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (userData: Partial<User>) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Check if user is stored in localStorage (simulating persistence)
-    const storedUser = localStorage.getItem('finWiseUser');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, newSession) => {
+        setSession(newSession);
+        if (newSession?.user) {
+          // We need to fetch the user profile data
+          setTimeout(() => {
+            fetchUserProfile(newSession.user.id);
+          }, 0);
+        } else {
+          setUser(null);
+        }
+      }
+    );
+
+    // Initial session check
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      setSession(currentSession);
+      if (currentSession?.user) {
+        fetchUserProfile(currentSession.user.id);
+      } else {
+        setIsLoading(false);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
+
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        const userData: User = {
+          id: data.id,
+          name: data.name,
+          email: data.email,
+          monthlyIncome: data.monthly_income || 0,
+          riskTolerance: data.risk_tolerance || 'medium',
+          financialGoals: data.financial_goals || [],
+          avatarUrl: data.avatar_url,
+          createdAt: new Date(data.created_at)
+        };
+        setUser(userData);
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load user profile',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const userData = await api.login(email, password);
-      setUser(userData);
-      localStorage.setItem('finWiseUser', JSON.stringify(userData));
-    } catch (error) {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) throw error;
+    } catch (error: any) {
       console.error('Login failed:', error);
-      throw error;
-    } finally {
+      toast({
+        title: 'Login Failed',
+        description: error.message || 'Unable to login',
+        variant: 'destructive'
+      });
       setIsLoading(false);
+      throw error;
     }
   };
 
   const register = async (userData: Partial<User>) => {
     setIsLoading(true);
     try {
-      const newUser = await api.register(userData);
-      setUser(newUser);
-      localStorage.setItem('finWiseUser', JSON.stringify(newUser));
-    } catch (error) {
+      const { error } = await supabase.auth.signUp({
+        email: userData.email!,
+        password: userData.password as string,
+        options: {
+          data: {
+            name: userData.name,
+          }
+        }
+      });
+
+      if (error) throw error;
+      
+      toast({
+        title: 'Registration Successful',
+        description: 'Please check your email to confirm your registration.',
+      });
+    } catch (error: any) {
       console.error('Registration failed:', error);
-      throw error;
-    } finally {
+      toast({
+        title: 'Registration Failed',
+        description: error.message || 'Unable to register',
+        variant: 'destructive'
+      });
       setIsLoading(false);
+      throw error;
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('finWiseUser');
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Logout failed:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to log out',
+        variant: 'destructive'
+      });
+    }
   };
 
   return (

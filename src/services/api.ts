@@ -1,457 +1,367 @@
-
 import { User } from '../models/user';
 import { Transaction } from '../models/transaction';
 import { Budget } from '../models/budget';
 import { SavingsGoal } from '../models/goal';
 import { AiTip, ChatMessage } from '../models/aiTip';
+import { supabase } from '@/integrations/supabase/client';
 
-// For demo purposes, we'll use dummy data
-// In a real app, these would be API calls to your backend
-
-// Create dummy data
-const dummyUser: User = {
-  id: 'user1',
-  name: 'Alex Johnson',
-  email: 'alex@example.com',
-  monthlyIncome: 4500,
-  riskTolerance: 'medium',
-  financialGoals: ['Buy a house', 'Save for retirement', 'Travel to Japan'],
-  createdAt: new Date('2023-01-15')
-};
-
-const dummyTransactions: Transaction[] = [
-  {
-    id: 't1',
-    userId: 'user1',
-    amount: 1200,
-    date: new Date('2023-04-01'),
-    description: 'Rent payment',
-    category: 'housing',
-    isIncome: false,
-    isRecurring: true,
-    recurringFrequency: 'monthly'
-  },
-  {
-    id: 't2',
-    userId: 'user1',
-    amount: 85.42,
-    date: new Date('2023-04-02'),
-    description: 'Grocery shopping',
-    category: 'food',
-    isIncome: false,
-    isRecurring: false
-  },
-  {
-    id: 't3',
-    userId: 'user1',
-    amount: 4500,
-    date: new Date('2023-04-05'),
-    description: 'Salary deposit',
-    category: 'income',
-    isIncome: true,
-    isRecurring: true,
-    recurringFrequency: 'monthly'
-  },
-  {
-    id: 't4',
-    userId: 'user1',
-    amount: 125,
-    date: new Date('2023-04-07'),
-    description: 'Electricity bill',
-    category: 'utilities',
-    isIncome: false,
-    isRecurring: true,
-    recurringFrequency: 'monthly'
-  },
-  {
-    id: 't5',
-    userId: 'user1',
-    amount: 65.99,
-    date: new Date('2023-04-08'),
-    description: 'Movie and dinner',
-    category: 'entertainment',
-    isIncome: false,
-    isRecurring: false
-  },
-  {
-    id: 't6',
-    userId: 'user1',
-    amount: 35.50,
-    date: new Date('2023-04-10'),
-    description: 'Gas station',
-    category: 'transportation',
-    isIncome: false,
-    isRecurring: false
-  },
-  {
-    id: 't7',
-    userId: 'user1',
-    amount: 60,
-    date: new Date('2023-04-12'),
-    description: 'Internet subscription',
-    category: 'utilities',
-    isIncome: false,
-    isRecurring: true,
-    recurringFrequency: 'monthly'
-  },
-  {
-    id: 't8',
-    userId: 'user1',
-    amount: 129.99,
-    date: new Date('2023-04-15'),
-    description: 'New shoes',
-    category: 'shopping',
-    isIncome: false,
-    isRecurring: false
-  },
-  {
-    id: 't9',
-    userId: 'user1',
-    amount: 500,
-    date: new Date('2023-04-15'),
-    description: 'Investment deposit',
-    category: 'savings',
-    isIncome: false,
-    isRecurring: true,
-    recurringFrequency: 'monthly'
-  },
-  {
-    id: 't10',
-    userId: 'user1',
-    amount: 45.30,
-    date: new Date('2023-04-18'),
-    description: 'Pharmacy',
-    category: 'healthcare',
-    isIncome: false,
-    isRecurring: false
-  }
-];
-
-const dummyBudgets: Budget[] = [
-  {
-    id: 'b1',
-    userId: 'user1',
-    category: 'housing',
-    limit: 1500,
-    period: 'monthly',
-    startDate: new Date('2023-04-01'),
-    isActive: true,
-    currentSpent: 1200
-  },
-  {
-    id: 'b2',
-    userId: 'user1',
-    category: 'food',
-    limit: 600,
-    period: 'monthly',
-    startDate: new Date('2023-04-01'),
-    isActive: true,
-    currentSpent: 320
-  },
-  {
-    id: 'b3',
-    userId: 'user1',
-    category: 'entertainment',
-    limit: 250,
-    period: 'monthly',
-    startDate: new Date('2023-04-01'),
-    isActive: true,
-    currentSpent: 180
-  },
-  {
-    id: 'b4',
-    userId: 'user1',
-    category: 'transportation',
-    limit: 200,
-    period: 'monthly',
-    startDate: new Date('2023-04-01'),
-    isActive: true,
-    currentSpent: 120
-  },
-  {
-    id: 'b5',
-    userId: 'user1',
-    category: 'utilities',
-    limit: 300,
-    period: 'monthly',
-    startDate: new Date('2023-04-01'),
-    isActive: true,
-    currentSpent: 185
-  }
-];
-
-const dummyGoals: SavingsGoal[] = [
-  {
-    id: 'g1',
-    userId: 'user1',
-    name: 'Emergency Fund',
-    targetAmount: 10000,
-    currentAmount: 5000,
-    category: 'emergency',
-    priority: 'high',
-    isCompleted: false,
-    createdAt: new Date('2023-02-01'),
-    imageUrl: '/placeholder.svg'
-  },
-  {
-    id: 'g2',
-    userId: 'user1',
-    name: 'Japan Trip',
-    targetAmount: 3500,
-    currentAmount: 1200,
-    deadline: new Date('2023-12-31'),
-    category: 'vacation',
-    priority: 'medium',
-    isCompleted: false,
-    createdAt: new Date('2023-01-15'),
-    imageUrl: '/placeholder.svg'
-  },
-  {
-    id: 'g3',
-    userId: 'user1',
-    name: 'New Laptop',
-    targetAmount: 1500,
-    currentAmount: 800,
-    deadline: new Date('2023-08-31'),
-    category: 'large_purchase',
-    priority: 'low',
-    isCompleted: false,
-    createdAt: new Date('2023-03-10'),
-    imageUrl: '/placeholder.svg'
-  }
-];
-
-const dummyTips: AiTip[] = [
-  {
-    id: 'tip1',
-    userId: 'user1',
-    content: 'You\'ve spent 80% of your entertainment budget this month. Consider limiting non-essential activities for the next week.',
-    category: 'budgeting',
-    createdAt: new Date('2023-04-20'),
-    isRead: false,
-    relevanceScore: 0.85
-  },
-  {
-    id: 'tip2',
-    userId: 'user1',
-    content: 'Based on your spending habits, you could save an additional $200 monthly by reducing food delivery services.',
-    category: 'savings',
-    createdAt: new Date('2023-04-18'),
-    isRead: true,
-    relevanceScore: 0.75
-  },
-  {
-    id: 'tip3',
-    userId: 'user1',
-    content: 'Your emergency fund is 50% complete! Keep up the good work. At this pace, you\'ll reach your goal by November.',
-    category: 'goals',
-    createdAt: new Date('2023-04-15'),
-    isRead: true,
-    relevanceScore: 0.9
-  }
-];
-
-const dummyMessages: ChatMessage[] = [
-  {
-    id: 'msg1',
-    content: 'Hi! How can I help with your finances today?',
-    sender: 'ai',
-    timestamp: new Date('2023-04-21T09:00:00')
-  },
-  {
-    id: 'msg2',
-    content: 'I want to know how I can save more money for my vacation goal',
-    sender: 'user',
-    timestamp: new Date('2023-04-21T09:01:00')
-  },
-  {
-    id: 'msg3',
-    content: 'Based on your spending habits, I see that you could save an additional $150 per month by reducing your entertainment expenses. Would you like me to suggest some specific strategies?',
-    sender: 'ai',
-    timestamp: new Date('2023-04-21T09:01:30')
-  }
-];
-
-// Simulate API services
+// Supabase data services
 export const api = {
   // Auth services
   login: async (email: string, password: string): Promise<User> => {
-    // In a real app, this would validate credentials with a server
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(dummyUser);
-      }, 800);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
     });
+    
+    if (error) throw error;
+    
+    // Fetch user profile
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', data.user.id)
+      .single();
+    
+    if (profileError) throw profileError;
+    
+    return {
+      id: profileData.id,
+      name: profileData.name,
+      email: profileData.email,
+      monthlyIncome: profileData.monthly_income || 0,
+      riskTolerance: profileData.risk_tolerance || 'medium',
+      financialGoals: profileData.financial_goals || [],
+      avatarUrl: profileData.avatar_url,
+      createdAt: new Date(profileData.created_at)
+    };
   },
   
   register: async (userData: Partial<User>): Promise<User> => {
-    // In a real app, this would create a new user on the server
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          ...dummyUser,
-          ...userData,
-          id: 'user' + Math.floor(Math.random() * 1000),
-          createdAt: new Date()
-        });
-      }, 800);
+    const { data, error } = await supabase.auth.signUp({
+      email: userData.email!,
+      password: userData.password as string,
+      options: {
+        data: {
+          name: userData.name,
+        }
+      }
     });
+    
+    if (error) throw error;
+    
+    // Profile creation will be handled by the database trigger
+    return {
+      id: data.user?.id || '',
+      name: userData.name || '',
+      email: userData.email || '',
+      monthlyIncome: userData.monthlyIncome || 0,
+      riskTolerance: userData.riskTolerance || 'medium',
+      financialGoals: userData.financialGoals || [],
+      createdAt: new Date()
+    };
   },
   
   getUserProfile: async (): Promise<User> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(dummyUser);
-      }, 500);
-    });
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) throw new Error('User not found');
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+    
+    if (error) throw error;
+    
+    return {
+      id: data.id,
+      name: data.name,
+      email: data.email,
+      monthlyIncome: data.monthly_income || 0,
+      riskTolerance: data.risk_tolerance || 'medium',
+      financialGoals: data.financial_goals || [],
+      avatarUrl: data.avatar_url,
+      createdAt: new Date(data.created_at)
+    };
   },
   
   // Transaction services
   getTransactions: async (): Promise<Transaction[]> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve([...dummyTransactions]);
-      }, 600);
-    });
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) return [];
+    
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .order('date', { ascending: false });
+    
+    if (error) throw error;
+    
+    return data.map(item => ({
+      id: item.id,
+      userId: item.user_id,
+      amount: item.amount,
+      date: new Date(item.date),
+      description: item.description || '',
+      category: item.category,
+      isIncome: item.is_income,
+      isRecurring: item.is_recurring,
+      recurringFrequency: item.recurring_frequency
+    }));
   },
   
   addTransaction: async (transaction: Partial<Transaction>): Promise<Transaction> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const newTransaction = {
-          ...transaction,
-          id: 't' + Math.floor(Math.random() * 1000),
-          userId: 'user1',
-          date: new Date(),
-        } as Transaction;
-        
-        dummyTransactions.push(newTransaction);
-        resolve(newTransaction);
-      }, 600);
-    });
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) throw new Error('User not authenticated');
+    
+    const { data, error } = await supabase
+      .from('transactions')
+      .insert([{
+        user_id: user.id,
+        amount: transaction.amount,
+        date: transaction.date?.toISOString() || new Date().toISOString(),
+        description: transaction.description,
+        category: transaction.category,
+        is_income: transaction.isIncome,
+        is_recurring: transaction.isRecurring,
+        recurring_frequency: transaction.recurringFrequency
+      }])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    return {
+      id: data.id,
+      userId: data.user_id,
+      amount: data.amount,
+      date: new Date(data.date),
+      description: data.description || '',
+      category: data.category,
+      isIncome: data.is_income,
+      isRecurring: data.is_recurring,
+      recurringFrequency: data.recurring_frequency
+    };
   },
   
   // Budget services
   getBudgets: async (): Promise<Budget[]> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve([...dummyBudgets]);
-      }, 500);
-    });
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) return [];
+    
+    const { data, error } = await supabase
+      .from('budgets')
+      .select('*');
+    
+    if (error) throw error;
+    
+    return data.map(item => ({
+      id: item.id,
+      userId: item.user_id,
+      category: item.category,
+      limit: item.budget_limit,
+      period: item.period,
+      startDate: new Date(item.start_date),
+      isActive: item.is_active,
+      currentSpent: item.current_spent
+    }));
   },
   
   createBudget: async (budget: Partial<Budget>): Promise<Budget> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const newBudget = {
-          ...budget,
-          id: 'b' + Math.floor(Math.random() * 1000),
-          userId: 'user1',
-          startDate: new Date(),
-          isActive: true,
-          currentSpent: 0
-        } as Budget;
-        
-        dummyBudgets.push(newBudget);
-        resolve(newBudget);
-      }, 600);
-    });
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) throw new Error('User not authenticated');
+    
+    const { data, error } = await supabase
+      .from('budgets')
+      .insert([{
+        user_id: user.id,
+        category: budget.category,
+        budget_limit: budget.limit,
+        period: budget.period,
+        start_date: budget.startDate?.toISOString() || new Date().toISOString(),
+        is_active: budget.isActive,
+        current_spent: budget.currentSpent || 0
+      }])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    return {
+      id: data.id,
+      userId: data.user_id,
+      category: data.category,
+      limit: data.budget_limit,
+      period: data.period,
+      startDate: new Date(data.start_date),
+      isActive: data.is_active,
+      currentSpent: data.current_spent
+    };
   },
   
   // Savings Goal services
   getSavingsGoals: async (): Promise<SavingsGoal[]> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve([...dummyGoals]);
-      }, 500);
-    });
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) return [];
+    
+    const { data, error } = await supabase
+      .from('savings_goals')
+      .select('*');
+    
+    if (error) throw error;
+    
+    return data.map(item => ({
+      id: item.id,
+      userId: item.user_id,
+      name: item.name,
+      targetAmount: item.target_amount,
+      currentAmount: item.current_amount,
+      deadline: item.deadline ? new Date(item.deadline) : undefined,
+      category: item.category,
+      priority: item.priority,
+      isCompleted: item.is_completed,
+      createdAt: new Date(item.created_at),
+      imageUrl: item.image_url
+    }));
   },
   
   createSavingsGoal: async (goal: Partial<SavingsGoal>): Promise<SavingsGoal> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const newGoal = {
-          ...goal,
-          id: 'g' + Math.floor(Math.random() * 1000),
-          userId: 'user1',
-          createdAt: new Date(),
-          isCompleted: false,
-          currentAmount: 0
-        } as SavingsGoal;
-        
-        dummyGoals.push(newGoal);
-        resolve(newGoal);
-      }, 600);
-    });
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) throw new Error('User not authenticated');
+    
+    const { data, error } = await supabase
+      .from('savings_goals')
+      .insert([{
+        user_id: user.id,
+        name: goal.name,
+        target_amount: goal.targetAmount,
+        current_amount: goal.currentAmount || 0,
+        deadline: goal.deadline?.toISOString(),
+        category: goal.category,
+        priority: goal.priority,
+        image_url: goal.imageUrl
+      }])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    return {
+      id: data.id,
+      userId: data.user_id,
+      name: data.name,
+      targetAmount: data.target_amount,
+      currentAmount: data.current_amount,
+      deadline: data.deadline ? new Date(data.deadline) : undefined,
+      category: data.category,
+      priority: data.priority,
+      isCompleted: data.is_completed,
+      createdAt: new Date(data.created_at),
+      imageUrl: data.image_url
+    };
   },
   
   updateSavingsGoal: async (goalId: string, amount: number): Promise<SavingsGoal> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const goalIndex = dummyGoals.findIndex(g => g.id === goalId);
-        if (goalIndex !== -1) {
-          dummyGoals[goalIndex].currentAmount += amount;
-          if (dummyGoals[goalIndex].currentAmount >= dummyGoals[goalIndex].targetAmount) {
-            dummyGoals[goalIndex].isCompleted = true;
-          }
-          resolve(dummyGoals[goalIndex]);
-        } else {
-          throw new Error('Goal not found');
-        }
-      }, 600);
-    });
+    const { data, error } = await supabase
+      .from('savings_goals')
+      .select('*')
+      .eq('id', goalId)
+      .single();
+    
+    if (error) throw error;
+    
+    const newAmount = data.current_amount + amount;
+    const isCompleted = newAmount >= data.target_amount;
+    
+    const { data: updatedData, error: updateError } = await supabase
+      .from('savings_goals')
+      .update({
+        current_amount: newAmount,
+        is_completed: isCompleted
+      })
+      .eq('id', goalId)
+      .select()
+      .single();
+    
+    if (updateError) throw updateError;
+    
+    return {
+      id: updatedData.id,
+      userId: updatedData.user_id,
+      name: updatedData.name,
+      targetAmount: updatedData.target_amount,
+      currentAmount: updatedData.current_amount,
+      deadline: updatedData.deadline ? new Date(updatedData.deadline) : undefined,
+      category: updatedData.category,
+      priority: updatedData.priority,
+      isCompleted: updatedData.is_completed,
+      createdAt: new Date(updatedData.created_at),
+      imageUrl: updatedData.image_url
+    };
   },
   
   // AI insights services
   getAiTips: async (): Promise<AiTip[]> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve([...dummyTips]);
-      }, 500);
-    });
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) return [];
+    
+    const { data, error } = await supabase
+      .from('ai_tips')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    return data.map(item => ({
+      id: item.id,
+      userId: item.user_id,
+      content: item.content,
+      category: item.category,
+      isRead: item.is_read,
+      relevanceScore: item.relevance_score,
+      createdAt: new Date(item.created_at)
+    }));
   },
   
   getChatHistory: async (): Promise<ChatMessage[]> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve([...dummyMessages]);
-      }, 500);
-    });
+    // For chat history, we'll keep a simple implementation for now
+    // In a real app, you'd store this in a Supabase table as well
+    return [
+      {
+        id: 'msg1',
+        content: 'Hi! How can I help with your finances today?',
+        sender: 'ai',
+        timestamp: new Date()
+      }
+    ];
   },
   
   sendChatMessage: async (content: string): Promise<ChatMessage[]> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const userMessage: ChatMessage = {
-          id: 'msg' + (dummyMessages.length + 1),
-          content,
-          sender: 'user',
-          timestamp: new Date()
-        };
-        
-        dummyMessages.push(userMessage);
-        
-        // Simulate AI response
-        setTimeout(() => {
-          const aiResponses = [
-            "That's a great goal! Based on your current spending, you could save $200 more each month by reducing restaurant expenses.",
-            "Looking at your budget, I recommend setting aside 15% of your income for this goal. Would you like me to adjust your budget automatically?",
-            "I've analyzed your spending patterns and notice you might be overpaying for subscriptions. Want me to show you which ones you use least?",
-            "Based on your income and expenses, you're on track to reach your emergency fund goal in about 6 months. Keep it up!",
-            "I notice you've been spending more on transportation lately. Have you considered carpooling or public transit to reduce these costs?"
-          ];
-          
-          const aiMessage: ChatMessage = {
-            id: 'msg' + (dummyMessages.length + 1),
-            content: aiResponses[Math.floor(Math.random() * aiResponses.length)],
-            sender: 'ai',
-            timestamp: new Date()
-          };
-          
-          dummyMessages.push(aiMessage);
-          resolve([...dummyMessages]);
-        }, 1000);
-      }, 600);
-    });
+    // Simple chat implementation
+    const userMessage: ChatMessage = {
+      id: 'user-' + Date.now(),
+      content,
+      sender: 'user',
+      timestamp: new Date()
+    };
+    
+    // AI response (placeholder)
+    const aiMessage: ChatMessage = {
+      id: 'ai-' + Date.now(),
+      content: 'I understand you want to know more about your finances. How else can I assist you today?',
+      sender: 'ai',
+      timestamp: new Date()
+    };
+    
+    return [userMessage, aiMessage];
   }
 };

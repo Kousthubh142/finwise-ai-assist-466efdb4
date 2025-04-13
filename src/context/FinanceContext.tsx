@@ -6,6 +6,7 @@ import { SavingsGoal } from '../models/goal';
 import { AiTip, ChatMessage } from '../models/aiTip';
 import { api } from '../services/api';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from './AuthContext';
 
 type FinanceContextType = {
   transactions: Transaction[];
@@ -35,6 +36,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
 
   // Function to calculate budget summary
   const calculateBudgetSummary = (budgets: Budget[]): BudgetSummary => {
@@ -62,6 +64,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Load all finance data
   const loadData = async () => {
+    if (!isAuthenticated) {
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     try {
       const [transactionData, budgetData, goalData, tipData, chatData] = await Promise.all([
@@ -94,8 +101,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Initial data load
   useEffect(() => {
-    loadData();
-  }, []);
+    if (isAuthenticated) {
+      loadData();
+    }
+  }, [isAuthenticated]);
 
   // Add a new transaction
   const addTransaction = async (transaction: Partial<Transaction>) => {

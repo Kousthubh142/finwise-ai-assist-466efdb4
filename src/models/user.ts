@@ -8,4 +8,5 @@ export interface User {
   financialGoals: string[];
   avatarUrl?: string;
   createdAt: Date;
+  password?: string; // Used only during registration
 }
