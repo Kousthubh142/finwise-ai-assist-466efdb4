@@ -1,8 +1,9 @@
+
 import { User } from '../models/user';
-import { Transaction } from '../models/transaction';
+import { Transaction, TransactionCategory } from '../models/transaction';
 import { Budget } from '../models/budget';
 import { SavingsGoal } from '../models/goal';
-import { AiTip, ChatMessage } from '../models/aiTip';
+import { AiTip, TipCategory, ChatMessage } from '../models/aiTip';
 import { supabase } from '@/integrations/supabase/client';
 
 // Supabase data services
@@ -25,12 +26,15 @@ export const api = {
     
     if (profileError) throw profileError;
     
+    // Cast the risk_tolerance to the appropriate type
+    const riskTolerance = profileData.risk_tolerance as 'low' | 'medium' | 'high';
+    
     return {
       id: profileData.id,
       name: profileData.name,
       email: profileData.email,
       monthlyIncome: profileData.monthly_income || 0,
-      riskTolerance: profileData.risk_tolerance || 'medium',
+      riskTolerance: riskTolerance,
       financialGoals: profileData.financial_goals || [],
       avatarUrl: profileData.avatar_url,
       createdAt: new Date(profileData.created_at)
@@ -50,13 +54,16 @@ export const api = {
     
     if (error) throw error;
     
+    // Cast the risk_tolerance to the appropriate type
+    const riskTolerance = userData.riskTolerance as 'low' | 'medium' | 'high';
+    
     // Profile creation will be handled by the database trigger
     return {
       id: data.user?.id || '',
       name: userData.name || '',
       email: userData.email || '',
       monthlyIncome: userData.monthlyIncome || 0,
-      riskTolerance: userData.riskTolerance || 'medium',
+      riskTolerance: riskTolerance || 'medium',
       financialGoals: userData.financialGoals || [],
       createdAt: new Date()
     };
@@ -75,12 +82,15 @@ export const api = {
     
     if (error) throw error;
     
+    // Cast the risk_tolerance to the appropriate type
+    const riskTolerance = data.risk_tolerance as 'low' | 'medium' | 'high';
+    
     return {
       id: data.id,
       name: data.name,
       email: data.email,
       monthlyIncome: data.monthly_income || 0,
-      riskTolerance: data.risk_tolerance || 'medium',
+      riskTolerance: riskTolerance,
       financialGoals: data.financial_goals || [],
       avatarUrl: data.avatar_url,
       createdAt: new Date(data.created_at)
@@ -106,10 +116,10 @@ export const api = {
       amount: item.amount,
       date: new Date(item.date),
       description: item.description || '',
-      category: item.category,
+      category: item.category as TransactionCategory,
       isIncome: item.is_income,
       isRecurring: item.is_recurring,
-      recurringFrequency: item.recurring_frequency
+      recurringFrequency: item.recurring_frequency as 'daily' | 'weekly' | 'monthly' | 'yearly' | undefined
     }));
   },
   
@@ -141,10 +151,10 @@ export const api = {
       amount: data.amount,
       date: new Date(data.date),
       description: data.description || '',
-      category: data.category,
+      category: data.category as TransactionCategory,
       isIncome: data.is_income,
       isRecurring: data.is_recurring,
-      recurringFrequency: data.recurring_frequency
+      recurringFrequency: data.recurring_frequency as 'daily' | 'weekly' | 'monthly' | 'yearly' | undefined
     };
   },
   
@@ -163,9 +173,9 @@ export const api = {
     return data.map(item => ({
       id: item.id,
       userId: item.user_id,
-      category: item.category,
+      category: item.category as TransactionCategory,
       limit: item.budget_limit,
-      period: item.period,
+      period: item.period as 'daily' | 'weekly' | 'monthly' | 'yearly',
       startDate: new Date(item.start_date),
       isActive: item.is_active,
       currentSpent: item.current_spent
@@ -196,9 +206,9 @@ export const api = {
     return {
       id: data.id,
       userId: data.user_id,
-      category: data.category,
+      category: data.category as TransactionCategory,
       limit: data.budget_limit,
-      period: data.period,
+      period: data.period as 'daily' | 'weekly' | 'monthly' | 'yearly',
       startDate: new Date(data.start_date),
       isActive: data.is_active,
       currentSpent: data.current_spent
@@ -224,8 +234,8 @@ export const api = {
       targetAmount: item.target_amount,
       currentAmount: item.current_amount,
       deadline: item.deadline ? new Date(item.deadline) : undefined,
-      category: item.category,
-      priority: item.priority,
+      category: item.category as 'emergency' | 'retirement' | 'large_purchase' | 'vacation' | 'education' | 'other',
+      priority: item.priority as 'low' | 'medium' | 'high',
       isCompleted: item.is_completed,
       createdAt: new Date(item.created_at),
       imageUrl: item.image_url
@@ -261,8 +271,8 @@ export const api = {
       targetAmount: data.target_amount,
       currentAmount: data.current_amount,
       deadline: data.deadline ? new Date(data.deadline) : undefined,
-      category: data.category,
-      priority: data.priority,
+      category: data.category as 'emergency' | 'retirement' | 'large_purchase' | 'vacation' | 'education' | 'other',
+      priority: data.priority as 'low' | 'medium' | 'high',
       isCompleted: data.is_completed,
       createdAt: new Date(data.created_at),
       imageUrl: data.image_url
@@ -300,8 +310,8 @@ export const api = {
       targetAmount: updatedData.target_amount,
       currentAmount: updatedData.current_amount,
       deadline: updatedData.deadline ? new Date(updatedData.deadline) : undefined,
-      category: updatedData.category,
-      priority: updatedData.priority,
+      category: updatedData.category as 'emergency' | 'retirement' | 'large_purchase' | 'vacation' | 'education' | 'other',
+      priority: updatedData.priority as 'low' | 'medium' | 'high',
       isCompleted: updatedData.is_completed,
       createdAt: new Date(updatedData.created_at),
       imageUrl: updatedData.image_url
@@ -325,7 +335,7 @@ export const api = {
       id: item.id,
       userId: item.user_id,
       content: item.content,
-      category: item.category,
+      category: item.category as TipCategory,
       isRead: item.is_read,
       relevanceScore: item.relevance_score,
       createdAt: new Date(item.created_at)

@@ -64,12 +64,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) throw error;
 
       if (data) {
+        // Ensure we correctly convert the risk_tolerance to the expected union type
+        const riskTolerance = data.risk_tolerance as 'low' | 'medium' | 'high';
+        
         const userData: User = {
           id: data.id,
           name: data.name,
           email: data.email,
           monthlyIncome: data.monthly_income || 0,
-          riskTolerance: data.risk_tolerance || 'medium',
+          riskTolerance: riskTolerance,
           financialGoals: data.financial_goals || [],
           avatarUrl: data.avatar_url,
           createdAt: new Date(data.created_at)
