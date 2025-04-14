@@ -1,4 +1,3 @@
-
 import { User } from '@/models/user';
 import { Transaction, TransactionCategory } from '@/models/transaction';
 import { Budget } from '@/models/budget';
@@ -15,6 +14,58 @@ const sessionStore = {
   aiTips: [] as AiTip[],
   chatHistory: [] as ChatMessage[]
 };
+
+// Utility function to map database transaction to app transaction
+const mapTransaction = (item: any): Transaction => ({
+  id: item.id,
+  userId: item.user_id,
+  date: new Date(item.date),
+  amount: item.amount,
+  category: item.category as TransactionCategory,
+  description: item.description || '',
+  isIncome: item.is_income || false,
+  isRecurring: item.is_recurring || false,
+  recurringFrequency: item.recurring_frequency as 'daily' | 'weekly' | 'monthly' | 'yearly' | undefined
+});
+
+// Utility function to map database budget to app budget
+const mapBudget = (item: any): Budget => ({
+  id: item.id,
+  userId: item.user_id,
+  category: item.category as TransactionCategory,
+  limit: item.budget_limit,
+  period: item.period as 'daily' | 'weekly' | 'monthly' | 'yearly',
+  startDate: new Date(item.start_date),
+  isActive: item.is_active || true,
+  currentSpent: item.current_spent || 0,
+  endDate: item.end_date ? new Date(item.end_date) : undefined
+});
+
+// Utility function to map database savings goal to app savings goal
+const mapSavingsGoal = (item: any): SavingsGoal => ({
+  id: item.id,
+  userId: item.user_id,
+  name: item.name,
+  targetAmount: item.target_amount,
+  currentAmount: item.current_amount || 0,
+  deadline: item.deadline ? new Date(item.deadline) : undefined,
+  category: item.category as 'emergency' | 'retirement' | 'education' | 'other' | 'large_purchase' | 'vacation',
+  priority: item.priority as 'low' | 'medium' | 'high',
+  isCompleted: item.is_completed || false,
+  createdAt: new Date(item.created_at),
+  imageUrl: item.image_url
+});
+
+// Utility function to map database user to app user
+const mapUser = (profileData: any, userData: any): User => ({
+  id: userData.id,
+  name: profileData.name,
+  email: userData.email || '',
+  monthlyIncome: profileData.monthly_income || 0,
+  riskTolerance: profileData.risk_tolerance as 'low' | 'medium' | 'high' || 'medium',
+  financialGoals: profileData.financial_goals || [],
+  createdAt: new Date(profileData.created_at)
+});
 
 // AI Service using Groq API
 class AIService {
@@ -86,31 +137,9 @@ export const api = {
         
       if (!profileData) throw new Error('Profile not found');
       
-      return {
-        id: data.user.id,
-        name: profileData.name,
-        email: data.user.email || '',
-        monthlyIncome: profileData.monthly_income || 0,
-        riskTolerance: profileData.risk_tolerance || 'medium',
-        financialGoals: profileData.financial_goals || [],
-        createdAt: new Date(profileData.created_at)
-      };
+      return mapUser(profileData, data.user);
     } catch (error) {
       console.error('Login error:', error);
-      
-      // Fallback for development (remove in production)
-      if (credentials.email === 'test@example.com' && credentials.password === 'password') {
-        return { 
-          id: '123', 
-          name: 'Test User', 
-          email: 'test@example.com',
-          monthlyIncome: 4500,
-          riskTolerance: 'medium',
-          financialGoals: ['emergency', 'retirement'],
-          createdAt: new Date()
-        };
-      }
-      
       throw new Error('Invalid credentials');
     }
   },
@@ -159,17 +188,7 @@ export const api = {
         
       if (error) throw error;
       
-      const transactions = data.map(item => ({
-        id: item.id,
-        userId: item.user_id,
-        date: new Date(item.date),
-        amount: item.amount,
-        category: item.category as TransactionCategory,
-        description: item.description || '',
-        isIncome: item.is_income || false,
-        isRecurring: item.is_recurring || false,
-        recurringFrequency: item.recurring_frequency
-      }));
+      const transactions = data.map(mapTransaction);
       
       sessionStore.transactions = transactions;
       return transactions;
@@ -203,38 +222,13 @@ export const api = {
         
       if (error) throw error;
       
-      const formattedTransaction: Transaction = {
-        id: data.id,
-        userId: data.user_id,
-        date: new Date(data.date),
-        amount: data.amount,
-        category: data.category as TransactionCategory,
-        description: data.description || '',
-        isIncome: data.is_income || false,
-        isRecurring: data.is_recurring || false,
-        recurringFrequency: data.recurring_frequency
-      };
+      const formattedTransaction = mapTransaction(data);
       
       sessionStore.transactions = [...sessionStore.transactions, formattedTransaction];
       return formattedTransaction;
     } catch (error) {
       console.error('Error adding transaction:', error);
-      
-      // Fallback for development
-      const newTransaction: Transaction = {
-        id: Date.now().toString(),
-        userId: '123',
-        date: transaction.date || new Date(),
-        amount: transaction.amount || 0,
-        category: transaction.category || 'food',
-        description: transaction.description || '',
-        isIncome: transaction.isIncome || false,
-        isRecurring: transaction.isRecurring || false,
-        recurringFrequency: transaction.recurringFrequency,
-      };
-      
-      sessionStore.transactions = [...sessionStore.transactions, newTransaction];
-      return newTransaction;
+      throw error;
     }
   },
 
@@ -247,16 +241,7 @@ export const api = {
         
       if (error) throw error;
       
-      const budgets = data.map(item => ({
-        id: item.id,
-        userId: item.user_id,
-        category: item.category as TransactionCategory,
-        limit: item.budget_limit,
-        period: item.period,
-        startDate: new Date(item.start_date),
-        isActive: item.is_active || true,
-        currentSpent: item.current_spent || 0
-      }));
+      const budgets = data.map(mapBudget);
       
       sessionStore.budgets = budgets;
       return budgets;
@@ -289,36 +274,13 @@ export const api = {
         
       if (error) throw error;
       
-      const formattedBudget: Budget = {
-        id: data.id,
-        userId: data.user_id,
-        category: data.category as TransactionCategory,
-        limit: data.budget_limit,
-        period: data.period,
-        startDate: new Date(data.start_date),
-        isActive: data.is_active || true,
-        currentSpent: data.current_spent || 0
-      };
+      const formattedBudget = mapBudget(data);
       
       sessionStore.budgets = [...sessionStore.budgets, formattedBudget];
       return formattedBudget;
     } catch (error) {
       console.error('Error creating budget:', error);
-      
-      // Fallback for development
-      const newBudget: Budget = {
-        id: Date.now().toString(),
-        userId: '123',
-        category: budget.category || 'food',
-        limit: budget.limit || 0,
-        period: budget.period || 'monthly',
-        startDate: new Date(),
-        isActive: true,
-        currentSpent: 0,
-      };
-      
-      sessionStore.budgets = [...sessionStore.budgets, newBudget];
-      return newBudget;
+      throw error;
     }
   },
 
@@ -331,19 +293,7 @@ export const api = {
         
       if (error) throw error;
       
-      const goals = data.map(item => ({
-        id: item.id,
-        userId: item.user_id,
-        name: item.name,
-        targetAmount: item.target_amount,
-        currentAmount: item.current_amount || 0,
-        deadline: item.deadline ? new Date(item.deadline) : undefined,
-        isCompleted: item.is_completed || false,
-        category: item.category,
-        priority: item.priority,
-        createdAt: new Date(item.created_at),
-        imageUrl: item.image_url
-      }));
+      const goals = data.map(mapSavingsGoal);
       
       sessionStore.savingsGoals = goals;
       return goals;
@@ -378,42 +328,13 @@ export const api = {
         
       if (error) throw error;
       
-      const formattedGoal: SavingsGoal = {
-        id: data.id,
-        userId: data.user_id,
-        name: data.name,
-        targetAmount: data.target_amount,
-        currentAmount: data.current_amount || 0,
-        deadline: data.deadline ? new Date(data.deadline) : undefined,
-        isCompleted: data.is_completed || false,
-        category: data.category,
-        priority: data.priority,
-        createdAt: new Date(data.created_at),
-        imageUrl: data.image_url
-      };
+      const formattedGoal = mapSavingsGoal(data);
       
       sessionStore.savingsGoals = [...sessionStore.savingsGoals, formattedGoal];
       return formattedGoal;
     } catch (error) {
       console.error('Error creating savings goal:', error);
-      
-      // Fallback for development
-      const newSavingsGoal: SavingsGoal = {
-        id: Date.now().toString(),
-        userId: '123',
-        name: goal.name || 'New Goal',
-        targetAmount: goal.targetAmount || 0,
-        currentAmount: 0,
-        deadline: goal.deadline || new Date(),
-        isCompleted: false,
-        category: goal.category || 'other',
-        priority: goal.priority || 'medium',
-        createdAt: new Date(),
-        imageUrl: goal.imageUrl
-      };
-      
-      sessionStore.savingsGoals = [...sessionStore.savingsGoals, newSavingsGoal];
-      return newSavingsGoal;
+      throw error;
     }
   },
   
@@ -441,19 +362,7 @@ export const api = {
         
       if (error) throw error;
       
-      const updatedGoal: SavingsGoal = {
-        id: data.id,
-        userId: data.user_id,
-        name: data.name,
-        targetAmount: data.target_amount,
-        currentAmount: data.current_amount,
-        deadline: data.deadline ? new Date(data.deadline) : undefined,
-        isCompleted: data.is_completed,
-        category: data.category,
-        priority: data.priority,
-        createdAt: new Date(data.created_at),
-        imageUrl: data.image_url
-      };
+      const updatedGoal = mapSavingsGoal(data);
       
       sessionStore.savingsGoals = sessionStore.savingsGoals.map(g => 
         g.id === goalId ? updatedGoal : g
@@ -462,21 +371,7 @@ export const api = {
       return updatedGoal;
     } catch (error) {
       console.error('Error updating savings goal:', error);
-      
-      // Fallback for development
-      const goalIndex = sessionStore.savingsGoals.findIndex(goal => goal.id === goalId);
-      if (goalIndex === -1) {
-        throw new Error('Goal not found');
-      }
-      
-      const updatedGoal = {
-        ...sessionStore.savingsGoals[goalIndex],
-        currentAmount: amount,
-        isCompleted: amount >= sessionStore.savingsGoals[goalIndex].targetAmount,
-      };
-      
-      sessionStore.savingsGoals[goalIndex] = updatedGoal;
-      return updatedGoal;
+      throw error;
     }
   },
 
