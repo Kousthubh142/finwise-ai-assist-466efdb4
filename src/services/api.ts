@@ -1,3 +1,4 @@
+
 import { User } from '@/models/user';
 import { Transaction, TransactionCategory } from '@/models/transaction';
 import { Budget } from '@/models/budget';
@@ -6,10 +7,10 @@ import { AiTip, ChatMessage, TipCategory } from '@/models/aiTip';
 
 // Mock data (replace with actual API calls later)
 let mockTransactions: Transaction[] = [
-  { id: '1', userId: '123', date: new Date(), amount: 50, category: 'food', description: 'Lunch', isIncome: false },
-  { id: '2', userId: '123', date: new Date(), amount: 100, category: 'shopping', description: 'Clothes', isIncome: false },
-  { id: '3', userId: '123', date: new Date(), amount: 2000, category: 'housing', description: 'Rent', isIncome: false },
-  { id: '4', userId: '123', date: new Date(), amount: 3000, category: 'salary', description: 'Salary', isIncome: true },
+  { id: '1', userId: '123', date: new Date(), amount: 50, category: 'food', description: 'Lunch', isIncome: false, isRecurring: false },
+  { id: '2', userId: '123', date: new Date(), amount: 100, category: 'shopping', description: 'Clothes', isIncome: false, isRecurring: false },
+  { id: '3', userId: '123', date: new Date(), amount: 2000, category: 'housing', description: 'Rent', isIncome: false, isRecurring: false },
+  { id: '4', userId: '123', date: new Date(), amount: 3000, category: 'income', description: 'Salary', isIncome: true, isRecurring: false },
 ];
 
 let mockBudgets: Budget[] = [
@@ -18,7 +19,7 @@ let mockBudgets: Budget[] = [
 ];
 
 let mockSavingsGoals: SavingsGoal[] = [
-  { id: '1', userId: '123', name: 'New Car', targetAmount: 20000, currentAmount: 5000, targetDate: new Date(), isCompleted: false },
+  { id: '1', userId: '123', name: 'New Car', targetAmount: 20000, currentAmount: 5000, deadline: new Date(), isCompleted: false, category: 'large_purchase', priority: 'medium', createdAt: new Date() },
 ];
 
 let mockAiTips: AiTip[] = [
@@ -86,14 +87,30 @@ export const api = {
   login: async (credentials: Pick<User, 'email' | 'password'>): Promise<User> => {
     // Mock login
     if (credentials.email === 'test@example.com' && credentials.password === 'password') {
-      return { id: '123', name: 'Test User', email: 'test@example.com' };
+      return { 
+        id: '123', 
+        name: 'Test User', 
+        email: 'test@example.com',
+        monthlyIncome: 4500,
+        riskTolerance: 'medium',
+        financialGoals: ['emergency', 'retirement'],
+        createdAt: new Date()
+      };
     }
     throw new Error('Invalid credentials');
   },
   
   register: async (userData: Omit<User, 'id'>): Promise<User> => {
     // Mock register
-    return { id: '123', name: userData.name, email: userData.email };
+    return { 
+      id: '123', 
+      name: userData.name, 
+      email: userData.email,
+      monthlyIncome: userData.monthlyIncome || 0,
+      riskTolerance: userData.riskTolerance || 'medium',
+      financialGoals: userData.financialGoals || [],
+      createdAt: new Date()
+    };
   },
 
   // Transactions
@@ -112,6 +129,8 @@ export const api = {
       category: transaction.category || 'food',
       description: transaction.description || '',
       isIncome: transaction.isIncome || false,
+      isRecurring: transaction.isRecurring || false,
+      recurringFrequency: transaction.recurringFrequency,
     };
     mockTransactions.push(newTransaction);
     return newTransaction;
@@ -153,8 +172,12 @@ export const api = {
       name: goal.name || 'New Goal',
       targetAmount: goal.targetAmount || 0,
       currentAmount: 0,
-      targetDate: goal.targetDate || new Date(),
+      deadline: goal.deadline || new Date(),
       isCompleted: false,
+      category: goal.category || 'other',
+      priority: goal.priority || 'medium',
+      createdAt: new Date(),
+      imageUrl: goal.imageUrl
     };
     mockSavingsGoals.push(newSavingsGoal);
     return newSavingsGoal;
