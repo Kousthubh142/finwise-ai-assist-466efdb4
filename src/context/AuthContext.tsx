@@ -10,7 +10,7 @@ type AuthContextType = {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (userData: Partial<User>) => Promise<void>;
+  register: (userData: Partial<User> & { password: string }) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -112,12 +112,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (userData: Partial<User>) => {
+  const register = async (userData: Partial<User> & { password: string }) => {
     setIsLoading(true);
     try {
+      // Make sure we have required fields
+      if (!userData.email || !userData.password || !userData.name) {
+        throw new Error('Email, password, and name are required');
+      }
+      
+      console.log('Attempting to register with:', { email: userData.email, name: userData.name });
+      
       const { error } = await supabase.auth.signUp({
-        email: userData.email!,
-        password: userData.password as string,
+        email: userData.email,
+        password: userData.password,
         options: {
           data: {
             name: userData.name,

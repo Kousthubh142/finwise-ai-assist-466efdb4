@@ -41,11 +41,7 @@ export default function Login() {
       });
       navigate('/');
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to login. Please check your credentials.',
-        variant: 'destructive',
-      });
+      // Error is already handled in the login function
     } finally {
       setIsSubmitting(false);
     }
@@ -62,20 +58,26 @@ export default function Login() {
       return;
     }
     
-    setIsSubmitting(true);
-    try {
-      await register({ name, email });
-      toast({
-        title: 'Success',
-        description: 'Account created successfully',
-      });
-      navigate('/onboarding');
-    } catch (error) {
+    // Validate password length
+    if (password.length < 6) {
       toast({
         title: 'Error',
-        description: 'Failed to create account',
+        description: 'Password must be at least 6 characters long',
         variant: 'destructive',
       });
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      await register({ name, email, password });
+      toast({
+        title: 'Success',
+        description: 'Account created successfully. You can now log in.',
+      });
+      setActiveTab('login');
+    } catch (error) {
+      // Error is already handled in the register function
     } finally {
       setIsSubmitting(false);
     }
@@ -179,6 +181,9 @@ export default function Login() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Password must be at least 6 characters long
+                  </p>
                 </div>
               </CardContent>
               <CardFooter>
