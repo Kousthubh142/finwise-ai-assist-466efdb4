@@ -36,7 +36,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { toast } = useToast();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   // Function to calculate budget summary
   const calculateBudgetSummary = (budgets: Budget[]): BudgetSummary => {
@@ -64,7 +64,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Load all finance data
   const loadData = async () => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !user) {
       setIsLoading(false);
       return;
     }
@@ -99,12 +99,20 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  // Initial data load
+  // Initial data load and refresh on auth changes
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && user) {
       loadData();
+    } else {
+      // Clear data when logged out
+      setTransactions([]);
+      setBudgets([]);
+      setBudgetSummary(null);
+      setSavingsGoals([]);
+      setAiTips([]);
+      setChatHistory([]);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user]);
 
   // Add a new transaction
   const addTransaction = async (transaction: Partial<Transaction>) => {
@@ -204,8 +212,22 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // Send a chat message and get AI response
   const sendChatMessage = async (content: string) => {
     try {
-      const updatedChat = await api.sendChatMessage(content);
+      // First, add the user message to the chat history
+      const userMessage: ChatMessage = {
+        id: Date.now().toString(),
+        content,
+        sender: 'user',
+        timestamp: new Date()
+      };
+      
+      const updatedChat = [...chatHistory, userMessage];
       setChatHistory(updatedChat);
+      
+      // Call AI service to get response
+      const aiResponse = await api.sendChatMessage(content);
+      
+      // Update chat history with AI response
+      setChatHistory(aiResponse);
     } catch (error) {
       console.error('Error sending message:', error);
       toast({

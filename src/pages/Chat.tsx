@@ -5,7 +5,8 @@ import { ChatBubble } from '@/components/ChatBubble';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Send, Bot } from 'lucide-react';
+import { Send, Bot, MessageSquare } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
 
 export default function Chat() {
   const { chatHistory, sendChatMessage, isLoading } = useFinance();
@@ -33,6 +34,11 @@ export default function Chat() {
       setMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
+      toast({
+        title: "Couldn't send message",
+        description: "There was an error sending your message. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsSending(false);
     }
@@ -57,7 +63,7 @@ export default function Chat() {
           <div>
             {chatHistory.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full">
-                <Bot className="h-16 w-16 text-muted-foreground mb-4" />
+                <MessageSquare className="h-16 w-16 text-primary/50 mb-4" />
                 <h3 className="text-lg font-medium mb-2">Ask me anything about your finances</h3>
                 <p className="text-muted-foreground text-center max-w-md mb-6">
                   I can help with budget advice, savings tips, analyzing your spending habits, and more.
@@ -66,31 +72,35 @@ export default function Chat() {
                   <Button 
                     variant="outline"
                     onClick={() => sendChatMessage("How can I improve my budget this month?")}
+                    disabled={isSending}
                   >
                     How can I improve my budget?
                   </Button>
                   <Button 
                     variant="outline"
                     onClick={() => sendChatMessage("What are my biggest expenses?")}
+                    disabled={isSending}
                   >
                     What are my biggest expenses?
                   </Button>
                   <Button 
                     variant="outline"
                     onClick={() => sendChatMessage("How much should I save for my emergency fund?")}
+                    disabled={isSending}
                   >
                     How much should I save?
                   </Button>
                   <Button 
                     variant="outline"
                     onClick={() => sendChatMessage("Tips for reducing my food expenses")}
+                    disabled={isSending}
                   >
                     Tips for reducing expenses
                   </Button>
                 </div>
               </div>
             ) : (
-              <div>
+              <div className="space-y-4">
                 {chatHistory.map((message) => (
                   <ChatBubble key={message.id} message={message} />
                 ))}
@@ -112,7 +122,11 @@ export default function Chat() {
             className="flex-1"
           />
           <Button type="submit" disabled={isSending || !message.trim()}>
-            <Send className="h-4 w-4" />
+            {isSending ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
           </Button>
         </form>
       </div>

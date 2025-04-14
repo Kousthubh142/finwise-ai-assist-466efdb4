@@ -1,377 +1,238 @@
+import { User } from '@/models/user';
+import { Transaction, TransactionCategory } from '@/models/transaction';
+import { Budget } from '@/models/budget';
+import { SavingsGoal } from '@/models/goal';
+import { AiTip, ChatMessage, TipCategory } from '@/models/aiTip';
 
-import { User } from '../models/user';
-import { Transaction, TransactionCategory } from '../models/transaction';
-import { Budget } from '../models/budget';
-import { SavingsGoal } from '../models/goal';
-import { AiTip, TipCategory, ChatMessage } from '../models/aiTip';
-import { supabase } from '@/integrations/supabase/client';
+// Mock data (replace with actual API calls later)
+let mockTransactions: Transaction[] = [
+  { id: '1', userId: '123', date: new Date(), amount: 50, category: 'food', description: 'Lunch', isIncome: false },
+  { id: '2', userId: '123', date: new Date(), amount: 100, category: 'shopping', description: 'Clothes', isIncome: false },
+  { id: '3', userId: '123', date: new Date(), amount: 2000, category: 'housing', description: 'Rent', isIncome: false },
+  { id: '4', userId: '123', date: new Date(), amount: 3000, category: 'salary', description: 'Salary', isIncome: true },
+];
 
-// Supabase data services
+let mockBudgets: Budget[] = [
+  { id: '1', userId: '123', category: 'food', limit: 300, period: 'monthly', startDate: new Date(), isActive: true, currentSpent: 150 },
+  { id: '2', userId: '123', category: 'housing', limit: 2000, period: 'monthly', startDate: new Date(), isActive: true, currentSpent: 2000 },
+];
+
+let mockSavingsGoals: SavingsGoal[] = [
+  { id: '1', userId: '123', name: 'New Car', targetAmount: 20000, currentAmount: 5000, targetDate: new Date(), isCompleted: false },
+];
+
+let mockAiTips: AiTip[] = [
+  { id: '1', userId: '123', content: 'Consider setting up automatic transfers to your savings account each month.', category: 'savings', createdAt: new Date(), isRead: false, relevanceScore: 80 },
+];
+
+let mockChatHistory: ChatMessage[] = [
+  { id: '1', content: 'How can I improve my budget?', sender: 'user', timestamp: new Date() },
+  { id: '2', content: 'Try to identify areas where you can cut back on spending, such as dining out or entertainment.', sender: 'ai', timestamp: new Date() },
+];
+
+// AI Service with Groq API
+class AIService {
+  private async callGroqAPI(prompt: string): Promise<string> {
+    try {
+      // This is a placeholder - we'll replace this with the actual API key in production
+      // For now, we'll return a simulated response
+      console.log('Calling Groq API with prompt:', prompt);
+      return `Based on your financial data, I recommend: ${prompt}`;
+    } catch (error) {
+      console.error('Error calling Groq API:', error);
+      throw new Error('Failed to get AI response');
+    }
+  }
+  
+  async generateFinancialInsight(userFinancialData: any): Promise<AiTip> {
+    // Analyze user data and generate a tip
+    const categories: TipCategory[] = ['savings', 'budgeting', 'spending', 'investing', 'debt', 'goals'];
+    const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+    
+    // In production, we'll send the financial data to the Groq API
+    const prompt = `Generate a financial insight about ${randomCategory} based on user data.`;
+    const content = await this.callGroqAPI(prompt);
+    
+    return {
+      id: Date.now().toString(),
+      userId: '123',
+      content,
+      category: randomCategory,
+      createdAt: new Date(),
+      isRead: false,
+      relevanceScore: Math.floor(Math.random() * 100)
+    };
+  }
+  
+  async getAIResponse(message: string, chatHistory: ChatMessage[]): Promise<string> {
+    // Format chat history for the AI
+    const formattedHistory = chatHistory
+      .map(msg => `${msg.sender}: ${msg.content}`)
+      .join('\n');
+    
+    // Create prompt for the financial advisor
+    const prompt = `You are a helpful financial assistant. The user has the following chat history:\n${formattedHistory}\n\nUser's latest message: ${message}\n\nProvide financial advice:`;
+    
+    // In production, we'll call the Groq API with the llama-3.3-70b-versatile model
+    return await this.callGroqAPI(prompt);
+  }
+}
+
+// Initialize AI service
+const aiService = new AIService();
+
 export const api = {
-  // Auth services
-  login: async (email: string, password: string): Promise<User> => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-    
-    if (error) throw error;
-    
-    // Fetch user profile
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', data.user.id)
-      .single();
-    
-    if (profileError) throw profileError;
-    
-    // Cast the risk_tolerance to the appropriate type
-    const riskTolerance = profileData.risk_tolerance as 'low' | 'medium' | 'high';
-    
-    return {
-      id: profileData.id,
-      name: profileData.name,
-      email: profileData.email,
-      monthlyIncome: profileData.monthly_income || 0,
-      riskTolerance: riskTolerance,
-      financialGoals: profileData.financial_goals || [],
-      avatarUrl: profileData.avatar_url,
-      createdAt: new Date(profileData.created_at)
-    };
+  // Authentication
+  login: async (credentials: Pick<User, 'email' | 'password'>): Promise<User> => {
+    // Mock login
+    if (credentials.email === 'test@example.com' && credentials.password === 'password') {
+      return { id: '123', name: 'Test User', email: 'test@example.com' };
+    }
+    throw new Error('Invalid credentials');
   },
   
-  register: async (userData: Partial<User>): Promise<User> => {
-    const { data, error } = await supabase.auth.signUp({
-      email: userData.email!,
-      password: userData.password as string,
-      options: {
-        data: {
-          name: userData.name,
-        }
-      }
-    });
-    
-    if (error) throw error;
-    
-    // Cast the risk_tolerance to the appropriate type
-    const riskTolerance = userData.riskTolerance as 'low' | 'medium' | 'high';
-    
-    // Profile creation will be handled by the database trigger
-    return {
-      id: data.user?.id || '',
-      name: userData.name || '',
-      email: userData.email || '',
-      monthlyIncome: userData.monthlyIncome || 0,
-      riskTolerance: riskTolerance || 'medium',
-      financialGoals: userData.financialGoals || [],
-      createdAt: new Date()
-    };
+  register: async (userData: Omit<User, 'id'>): Promise<User> => {
+    // Mock register
+    return { id: '123', name: userData.name, email: userData.email };
   },
-  
-  getUserProfile: async (): Promise<User> => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) throw new Error('User not found');
-    
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-    
-    if (error) throw error;
-    
-    // Cast the risk_tolerance to the appropriate type
-    const riskTolerance = data.risk_tolerance as 'low' | 'medium' | 'high';
-    
-    return {
-      id: data.id,
-      name: data.name,
-      email: data.email,
-      monthlyIncome: data.monthly_income || 0,
-      riskTolerance: riskTolerance,
-      financialGoals: data.financial_goals || [],
-      avatarUrl: data.avatar_url,
-      createdAt: new Date(data.created_at)
-    };
-  },
-  
-  // Transaction services
+
+  // Transactions
   getTransactions: async (): Promise<Transaction[]> => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) return [];
-    
-    const { data, error } = await supabase
-      .from('transactions')
-      .select('*')
-      .order('date', { ascending: false });
-    
-    if (error) throw error;
-    
-    return data.map(item => ({
-      id: item.id,
-      userId: item.user_id,
-      amount: item.amount,
-      date: new Date(item.date),
-      description: item.description || '',
-      category: item.category as TransactionCategory,
-      isIncome: item.is_income,
-      isRecurring: item.is_recurring,
-      recurringFrequency: item.recurring_frequency as 'daily' | 'weekly' | 'monthly' | 'yearly' | undefined
-    }));
+    // In a real app, we'd fetch from API/database
+    return mockTransactions;
   },
   
   addTransaction: async (transaction: Partial<Transaction>): Promise<Transaction> => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) throw new Error('User not authenticated');
-    
-    const { data, error } = await supabase
-      .from('transactions')
-      .insert([{
-        user_id: user.id,
-        amount: transaction.amount,
-        date: transaction.date?.toISOString() || new Date().toISOString(),
-        description: transaction.description,
-        category: transaction.category,
-        is_income: transaction.isIncome,
-        is_recurring: transaction.isRecurring,
-        recurring_frequency: transaction.recurringFrequency
-      }])
-      .select()
-      .single();
-    
-    if (error) throw error;
-    
-    return {
-      id: data.id,
-      userId: data.user_id,
-      amount: data.amount,
-      date: new Date(data.date),
-      description: data.description || '',
-      category: data.category as TransactionCategory,
-      isIncome: data.is_income,
-      isRecurring: data.is_recurring,
-      recurringFrequency: data.recurring_frequency as 'daily' | 'weekly' | 'monthly' | 'yearly' | undefined
+    // Mock add transaction
+    const newTransaction: Transaction = {
+      id: Date.now().toString(),
+      userId: '123',
+      date: new Date(),
+      amount: transaction.amount || 0,
+      category: transaction.category || 'food',
+      description: transaction.description || '',
+      isIncome: transaction.isIncome || false,
     };
+    mockTransactions.push(newTransaction);
+    return newTransaction;
   },
-  
-  // Budget services
+
+  // Budgets
   getBudgets: async (): Promise<Budget[]> => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) return [];
-    
-    const { data, error } = await supabase
-      .from('budgets')
-      .select('*');
-    
-    if (error) throw error;
-    
-    return data.map(item => ({
-      id: item.id,
-      userId: item.user_id,
-      category: item.category as TransactionCategory,
-      limit: item.budget_limit,
-      period: item.period as 'daily' | 'weekly' | 'monthly' | 'yearly',
-      startDate: new Date(item.start_date),
-      isActive: item.is_active,
-      currentSpent: item.current_spent
-    }));
+    // In a real app, we'd fetch from API/database
+    return mockBudgets;
   },
   
   createBudget: async (budget: Partial<Budget>): Promise<Budget> => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) throw new Error('User not authenticated');
-    
-    const { data, error } = await supabase
-      .from('budgets')
-      .insert([{
-        user_id: user.id,
-        category: budget.category,
-        budget_limit: budget.limit,
-        period: budget.period,
-        start_date: budget.startDate?.toISOString() || new Date().toISOString(),
-        is_active: budget.isActive,
-        current_spent: budget.currentSpent || 0
-      }])
-      .select()
-      .single();
-    
-    if (error) throw error;
-    
-    return {
-      id: data.id,
-      userId: data.user_id,
-      category: data.category as TransactionCategory,
-      limit: data.budget_limit,
-      period: data.period as 'daily' | 'weekly' | 'monthly' | 'yearly',
-      startDate: new Date(data.start_date),
-      isActive: data.is_active,
-      currentSpent: data.current_spent
+    // Mock create budget
+    const newBudget: Budget = {
+      id: Date.now().toString(),
+      userId: '123',
+      category: budget.category || 'food',
+      limit: budget.limit || 0,
+      period: budget.period || 'monthly',
+      startDate: new Date(),
+      isActive: true,
+      currentSpent: 0,
     };
+    mockBudgets.push(newBudget);
+    return newBudget;
   },
-  
-  // Savings Goal services
+
+  // Savings Goals
   getSavingsGoals: async (): Promise<SavingsGoal[]> => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) return [];
-    
-    const { data, error } = await supabase
-      .from('savings_goals')
-      .select('*');
-    
-    if (error) throw error;
-    
-    return data.map(item => ({
-      id: item.id,
-      userId: item.user_id,
-      name: item.name,
-      targetAmount: item.target_amount,
-      currentAmount: item.current_amount,
-      deadline: item.deadline ? new Date(item.deadline) : undefined,
-      category: item.category as 'emergency' | 'retirement' | 'large_purchase' | 'vacation' | 'education' | 'other',
-      priority: item.priority as 'low' | 'medium' | 'high',
-      isCompleted: item.is_completed,
-      createdAt: new Date(item.created_at),
-      imageUrl: item.image_url
-    }));
+    // In a real app, we'd fetch from API/database
+    return mockSavingsGoals;
   },
   
   createSavingsGoal: async (goal: Partial<SavingsGoal>): Promise<SavingsGoal> => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) throw new Error('User not authenticated');
-    
-    const { data, error } = await supabase
-      .from('savings_goals')
-      .insert([{
-        user_id: user.id,
-        name: goal.name,
-        target_amount: goal.targetAmount,
-        current_amount: goal.currentAmount || 0,
-        deadline: goal.deadline?.toISOString(),
-        category: goal.category,
-        priority: goal.priority,
-        image_url: goal.imageUrl
-      }])
-      .select()
-      .single();
-    
-    if (error) throw error;
-    
-    return {
-      id: data.id,
-      userId: data.user_id,
-      name: data.name,
-      targetAmount: data.target_amount,
-      currentAmount: data.current_amount,
-      deadline: data.deadline ? new Date(data.deadline) : undefined,
-      category: data.category as 'emergency' | 'retirement' | 'large_purchase' | 'vacation' | 'education' | 'other',
-      priority: data.priority as 'low' | 'medium' | 'high',
-      isCompleted: data.is_completed,
-      createdAt: new Date(data.created_at),
-      imageUrl: data.image_url
+    // Mock create savings goal
+    const newSavingsGoal: SavingsGoal = {
+      id: Date.now().toString(),
+      userId: '123',
+      name: goal.name || 'New Goal',
+      targetAmount: goal.targetAmount || 0,
+      currentAmount: 0,
+      targetDate: goal.targetDate || new Date(),
+      isCompleted: false,
     };
+    mockSavingsGoals.push(newSavingsGoal);
+    return newSavingsGoal;
   },
   
   updateSavingsGoal: async (goalId: string, amount: number): Promise<SavingsGoal> => {
-    const { data, error } = await supabase
-      .from('savings_goals')
-      .select('*')
-      .eq('id', goalId)
-      .single();
+    const goalIndex = mockSavingsGoals.findIndex(goal => goal.id === goalId);
+    if (goalIndex === -1) {
+      throw new Error('Goal not found');
+    }
     
-    if (error) throw error;
-    
-    const newAmount = data.current_amount + amount;
-    const isCompleted = newAmount >= data.target_amount;
-    
-    const { data: updatedData, error: updateError } = await supabase
-      .from('savings_goals')
-      .update({
-        current_amount: newAmount,
-        is_completed: isCompleted
-      })
-      .eq('id', goalId)
-      .select()
-      .single();
-    
-    if (updateError) throw updateError;
-    
-    return {
-      id: updatedData.id,
-      userId: updatedData.user_id,
-      name: updatedData.name,
-      targetAmount: updatedData.target_amount,
-      currentAmount: updatedData.current_amount,
-      deadline: updatedData.deadline ? new Date(updatedData.deadline) : undefined,
-      category: updatedData.category as 'emergency' | 'retirement' | 'large_purchase' | 'vacation' | 'education' | 'other',
-      priority: updatedData.priority as 'low' | 'medium' | 'high',
-      isCompleted: updatedData.is_completed,
-      createdAt: new Date(updatedData.created_at),
-      imageUrl: updatedData.image_url
+    mockSavingsGoals[goalIndex] = {
+      ...mockSavingsGoals[goalIndex],
+      currentAmount: amount,
+      isCompleted: amount >= mockSavingsGoals[goalIndex].targetAmount,
     };
+    
+    return mockSavingsGoals[goalIndex];
   },
-  
-  // AI insights services
+
+  // AI Tips
   getAiTips: async (): Promise<AiTip[]> => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) return [];
-    
-    const { data, error } = await supabase
-      .from('ai_tips')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    
-    return data.map(item => ({
-      id: item.id,
-      userId: item.user_id,
-      content: item.content,
-      category: item.category as TipCategory,
-      isRead: item.is_read,
-      relevanceScore: item.relevance_score,
-      createdAt: new Date(item.created_at)
-    }));
+    // In a real app, we'd fetch from API/database
+    return mockAiTips;
   },
   
+  // Chat functionality
   getChatHistory: async (): Promise<ChatMessage[]> => {
-    // For chat history, we'll keep a simple implementation for now
-    // In a real app, you'd store this in a Supabase table as well
-    return [
-      {
-        id: 'msg1',
-        content: 'Hi! How can I help with your finances today?',
-        sender: 'ai',
-        timestamp: new Date()
-      }
-    ];
+    // In a real app, we'd fetch from API/database
+    return mockChatHistory;
   },
   
   sendChatMessage: async (content: string): Promise<ChatMessage[]> => {
-    // Simple chat implementation
-    const userMessage: ChatMessage = {
-      id: 'user-' + Date.now(),
-      content,
-      sender: 'user',
-      timestamp: new Date()
-    };
-    
-    // AI response (placeholder)
-    const aiMessage: ChatMessage = {
-      id: 'ai-' + Date.now(),
-      content: 'I understand you want to know more about your finances. How else can I assist you today?',
-      sender: 'ai',
-      timestamp: new Date()
-    };
-    
-    return [userMessage, aiMessage];
+    try {
+      // Get current chat history
+      const currentHistory = await api.getChatHistory();
+      
+      // Add user message
+      const userMessage: ChatMessage = {
+        id: Date.now().toString(),
+        content,
+        sender: 'user',
+        timestamp: new Date()
+      };
+      
+      // Get AI response
+      const aiResponse = await aiService.getAIResponse(content, [...currentHistory, userMessage]);
+      
+      // Create AI message
+      const aiMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        content: aiResponse,
+        sender: 'ai',
+        timestamp: new Date()
+      };
+      
+      // Update mock chat history
+      const updatedChat = [...currentHistory, userMessage, aiMessage];
+      mockChatHistory = updatedChat;
+      
+      // Generate a new AI tip based on the conversation
+      if (Math.random() > 0.7) {  // 30% chance to generate a new tip
+        const newTip = await aiService.generateFinancialInsight({});
+        mockAiTips = [newTip, ...mockAiTips];
+      }
+      
+      return updatedChat;
+    } catch (error) {
+      console.error('Error sending message:', error);
+      throw error;
+    }
+  },
+  
+  // Refresh all data - in a real app, this would refetch from backend
+  refreshData: async () => {
+    // Generate a new AI tip
+    const newTip = await aiService.generateFinancialInsight({});
+    mockAiTips = [newTip, ...mockAiTips];
+    return true;
   }
 };
