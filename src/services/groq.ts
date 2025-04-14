@@ -1,29 +1,51 @@
 
 import { ChatMessage } from '@/models/aiTip';
 
-// This is a placeholder class that will be replaced with actual Groq API integration
-// once we have the API key
+type Role = 'system' | 'user' | 'assistant';
+
 export class GroqService {
   private apiKey: string | null = null;
+  private baseUrl = 'https://api.groq.com/openai/v1/chat/completions';
+  private model = 'llama-3.3-70b-versatile';
   
   setApiKey(key: string) {
     this.apiKey = key;
     console.log('Groq API key set successfully');
   }
   
-  async getChatCompletion(messages: { role: 'system' | 'user' | 'assistant', content: string }[]): Promise<string> {
+  async getChatCompletion(messages: { role: Role, content: string }[]): Promise<string> {
     if (!this.apiKey) {
       console.warn('Groq API key not set, using mock response');
       return this.getMockResponse(messages);
     }
     
     try {
-      // Here we would make the actual API call
-      // For now, returning mock data until API key is provided
-      return this.getMockResponse(messages);
+      const response = await fetch(this.baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`
+        },
+        body: JSON.stringify({
+          model: this.model,
+          messages,
+          temperature: 0.7,
+          max_tokens: 1024
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Groq API error:', errorData);
+        throw new Error(`API error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return data.choices[0].message.content;
     } catch (error) {
       console.error('Error calling Groq API:', error);
-      throw new Error('Failed to get AI response');
+      // Fall back to mock response if API call fails
+      return this.getMockResponse(messages);
     }
   }
   
@@ -46,9 +68,9 @@ export class GroqService {
   }
   
   // Helper method to format chat history for the AI
-  formatChatHistory(chatHistory: ChatMessage[]): { role: 'system' | 'user' | 'assistant', content: string }[] {
+  formatChatHistory(chatHistory: ChatMessage[]): { role: Role, content: string }[] {
     // Start with a system message
-    const formatted: { role: 'system' | 'user' | 'assistant', content: string }[] = [
+    const formatted: { role: Role, content: string }[] = [
       {
         role: 'system',
         content: 'You are a helpful and knowledgeable financial advisor. Provide personalized, practical advice based on the user\'s financial situation and questions. Be specific, actionable, and encouraging.'
