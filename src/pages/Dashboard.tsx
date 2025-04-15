@@ -31,6 +31,25 @@ export default function Dashboard() {
   // Get unread AI tips
   const unreadTips = aiTips.filter(tip => !tip.isRead).slice(0, 3);
   
+  // Calculate total balance and monthly income
+  const totalIncome = transactions
+    .filter(t => t.isIncome)
+    .reduce((sum, t) => sum + t.amount, 0);
+  
+  const totalExpenses = transactions
+    .filter(t => !t.isIncome)
+    .reduce((sum, t) => sum + t.amount, 0);
+  
+  const totalBalance = totalIncome - totalExpenses;
+  
+  // Get monthly income (from the last 30 days)
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  
+  const monthlyIncome = transactions
+    .filter(t => t.isIncome && new Date(t.date) >= thirtyDaysAgo)
+    .reduce((sum, t) => sum + t.amount, 0);
+  
   return (
     <div className="mb-20">
       {/* Header with welcome and total balance */}
@@ -52,7 +71,7 @@ export default function Dashboard() {
               <Skeleton className="h-8 w-24" />
             ) : (
               <CardTitle className="text-2xl bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                {formatCurrency(12345.67)}
+                {formatCurrency(totalBalance)}
               </CardTitle>
             )}
           </CardHeader>
@@ -66,7 +85,7 @@ export default function Dashboard() {
               <Skeleton className="h-8 w-24" />
             ) : (
               <CardTitle className="text-2xl bg-gradient-to-r from-green-500 to-green-700 bg-clip-text text-transparent">
-                {formatCurrency(4500)}
+                {formatCurrency(monthlyIncome)}
               </CardTitle>
             )}
           </CardHeader>

@@ -39,13 +39,26 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const { isAuthenticated, user } = useAuth();
 
   // Function to calculate budget summary
-  const calculateBudgetSummary = (budgets: Budget[]): BudgetSummary => {
-    const totalBudget = budgets.reduce((sum, budget) => sum + budget.limit, 0);
-    const totalSpent = budgets.reduce((sum, budget) => sum + budget.currentSpent, 0);
+  const calculateBudgetSummary = (budgets: Budget[], transactions: Transaction[]): BudgetSummary => {
+    // Calculate actual spent for each category based on transactions
+    const updatedBudgets = budgets.map(budget => {
+      const categoryTransactions = transactions.filter(
+        t => t.category === budget.category && !t.isIncome
+      );
+      const categorySpent = categoryTransactions.reduce((sum, t) => sum + t.amount, 0);
+      
+      return {
+        ...budget,
+        currentSpent: categorySpent // Update with actual spent amount
+      };
+    });
+    
+    const totalBudget = updatedBudgets.reduce((sum, budget) => sum + budget.limit, 0);
+    const totalSpent = updatedBudgets.reduce((sum, budget) => sum + budget.currentSpent, 0);
     const remaining = totalBudget - totalSpent;
     const percentUsed = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
 
-    const categories = budgets.map(budget => ({
+    const categories = updatedBudgets.map(budget => ({
       category: budget.category,
       limit: budget.limit,
       spent: budget.currentSpent,
@@ -85,8 +98,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setAiTips(tipData);
       setChatHistory(chatData);
       
-      // Calculate budget summary
-      setBudgetSummary(calculateBudgetSummary(budgetData));
+      // Calculate budget summary based on transactions and budgets
+      setBudgetSummary(calculateBudgetSummary(budgetData, transactionData));
     } catch (error) {
       console.error('Error loading finance data:', error);
       toast({
@@ -118,16 +131,14 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const addTransaction = async (transaction: Partial<Transaction>) => {
     try {
       const newTransaction = await api.addTransaction(transaction);
-      setTransactions(prev => [...prev, newTransaction]);
       
-      // Update budget for the category
-      const relevantBudgetIndex = budgets.findIndex(b => b.category === newTransaction.category);
-      if (relevantBudgetIndex !== -1 && !newTransaction.isIncome) {
-        const updatedBudgets = [...budgets];
-        updatedBudgets[relevantBudgetIndex].currentSpent += newTransaction.amount;
-        setBudgets(updatedBudgets);
-        setBudgetSummary(calculateBudgetSummary(updatedBudgets));
-      }
+      // Update transactions state
+      const updatedTransactions = [...transactions, newTransaction];
+      setTransactions(updatedTransactions);
+      
+      // Recalculate budget summary with updated transactions
+      const updatedSummary = calculateBudgetSummary(budgets, updatedTransactions);
+      setBudgetSummary(updatedSummary);
       
       toast({
         title: 'Success',
@@ -147,8 +158,14 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const createBudget = async (budget: Partial<Budget>) => {
     try {
       const newBudget = await api.createBudget(budget);
-      setBudgets(prev => [...prev, newBudget]);
-      setBudgetSummary(calculateBudgetSummary([...budgets, newBudget]));
+      
+      // Update budgets state
+      const updatedBudgets = [...budgets, newBudget];
+      setBudgets(updatedBudgets);
+      
+      // Recalculate budget summary with new budget
+      setBudgetSummary(calculateBudgetSummary(updatedBudgets, transactions));
+      
       toast({
         title: 'Success',
         description: 'Budget created successfully'

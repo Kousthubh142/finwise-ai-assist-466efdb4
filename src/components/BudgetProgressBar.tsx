@@ -13,7 +13,7 @@ type BudgetProgressBarProps = {
 };
 
 export function BudgetProgressBar({ category, spent, limit, compact = false }: BudgetProgressBarProps) {
-  const percentUsed = Math.min((spent / limit) * 100, 100);
+  const percentUsed = Math.min((spent / limit) * 100 || 0, 100);
   const Icon = getCategoryIcon(category);
   
   // Determine color based on percentage

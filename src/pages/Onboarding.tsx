@@ -9,6 +9,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Onboarding() {
   const [step, setStep] = useState(1);
@@ -50,13 +51,48 @@ export default function Onboarding() {
     }
   };
 
-  const completeOnboarding = () => {
-    // In a real app, this would update the user profile
-    toast({
-      title: 'Success',
-      description: 'Your profile has been set up!',
-    });
-    navigate('/');
+  const completeOnboarding = async () => {
+    if (!user) {
+      toast({
+        title: 'Error',
+        description: 'Unable to update profile. User not found.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    try {
+      // Convert selected goals to array
+      const financialGoals = Object.entries(goals)
+        .filter(([_, selected]) => selected)
+        .map(([goal]) => goal);
+      
+      // Update user profile
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          monthly_income: parseFloat(monthlyIncome),
+          risk_tolerance: riskTolerance,
+          financial_goals: financialGoals
+        })
+        .eq('id', user.id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: 'Success',
+        description: 'Your profile has been set up!',
+      });
+      
+      navigate('/');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update profile. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const toggleGoal = (goal: keyof typeof goals) => {
