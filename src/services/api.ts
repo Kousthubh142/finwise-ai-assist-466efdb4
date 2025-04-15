@@ -1,4 +1,3 @@
-
 import { User } from '@/models/user';
 import { Transaction, TransactionCategory } from '@/models/transaction';
 import { Budget } from '@/models/budget';
@@ -446,8 +445,14 @@ export const api = {
         timestamp: new Date()
       };
       
+      // Create temporary history with the new user message
+      const updatedHistory = [...currentHistory, userMessage];
+      
+      // Format messages for Groq API
+      const formattedMessages = groqService.formatChatHistory(updatedHistory);
+      
       // Get AI response using the Groq API
-      const aiResponse = await aiService.getAIResponse(content, [...currentHistory, userMessage]);
+      const aiResponse = await groqService.getChatCompletion(formattedMessages);
       
       // Create AI message
       const aiMessage: ChatMessage = {
@@ -457,9 +462,9 @@ export const api = {
         timestamp: new Date()
       };
       
-      // Update chat history
-      const updatedChat = [...currentHistory, userMessage, aiMessage];
-      sessionStore.chatHistory = updatedChat;
+      // Update chat history with both messages
+      const finalUpdatedChat = [...updatedHistory, aiMessage];
+      sessionStore.chatHistory = finalUpdatedChat;
       
       // Generate a new AI tip based on the conversation
       if (Math.random() > 0.7) {  // 30% chance to generate a new tip
@@ -483,7 +488,7 @@ export const api = {
         sessionStore.aiTips = [newTip, ...sessionStore.aiTips];
       }
       
-      return updatedChat;
+      return finalUpdatedChat;
     } catch (error) {
       console.error('Error sending message:', error);
       throw error;

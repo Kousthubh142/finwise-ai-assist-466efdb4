@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Transaction, TransactionCategory } from '../models/transaction';
 import { Budget, BudgetSummary } from '../models/budget';
@@ -38,9 +37,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const { toast } = useToast();
   const { isAuthenticated, user } = useAuth();
 
-  // Function to calculate budget summary
   const calculateBudgetSummary = (budgets: Budget[], transactions: Transaction[]): BudgetSummary => {
-    // Calculate actual spent for each category based on transactions
     const updatedBudgets = budgets.map(budget => {
       const categoryTransactions = transactions.filter(
         t => t.category === budget.category && !t.isIncome
@@ -49,7 +46,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       
       return {
         ...budget,
-        currentSpent: categorySpent // Update with actual spent amount
+        currentSpent: categorySpent
       };
     });
     
@@ -75,7 +72,6 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
   };
 
-  // Load all finance data
   const loadData = async () => {
     if (!isAuthenticated || !user) {
       setIsLoading(false);
@@ -98,7 +94,6 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setAiTips(tipData);
       setChatHistory(chatData);
       
-      // Calculate budget summary based on transactions and budgets
       setBudgetSummary(calculateBudgetSummary(budgetData, transactionData));
     } catch (error) {
       console.error('Error loading finance data:', error);
@@ -112,12 +107,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  // Initial data load and refresh on auth changes
   useEffect(() => {
     if (isAuthenticated && user) {
       loadData();
     } else {
-      // Clear data when logged out
       setTransactions([]);
       setBudgets([]);
       setBudgetSummary(null);
@@ -127,16 +120,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, [isAuthenticated, user]);
 
-  // Add a new transaction
   const addTransaction = async (transaction: Partial<Transaction>) => {
     try {
       const newTransaction = await api.addTransaction(transaction);
       
-      // Update transactions state
       const updatedTransactions = [...transactions, newTransaction];
       setTransactions(updatedTransactions);
       
-      // Recalculate budget summary with updated transactions
       const updatedSummary = calculateBudgetSummary(budgets, updatedTransactions);
       setBudgetSummary(updatedSummary);
       
@@ -154,16 +144,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  // Create a new budget
   const createBudget = async (budget: Partial<Budget>) => {
     try {
       const newBudget = await api.createBudget(budget);
       
-      // Update budgets state
       const updatedBudgets = [...budgets, newBudget];
       setBudgets(updatedBudgets);
       
-      // Recalculate budget summary with new budget
       setBudgetSummary(calculateBudgetSummary(updatedBudgets, transactions));
       
       toast({
@@ -180,7 +167,6 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  // Create a new savings goal
   const createSavingsGoal = async (goal: Partial<SavingsGoal>) => {
     try {
       const newGoal = await api.createSavingsGoal(goal);
@@ -199,7 +185,6 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  // Update a savings goal
   const updateSavingsGoal = async (goalId: string, amount: number) => {
     try {
       const updatedGoal = await api.updateSavingsGoal(goalId, amount);
@@ -226,10 +211,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  // Send a chat message and get AI response
   const sendChatMessage = async (content: string) => {
     try {
-      // First, add the user message to the chat history
+      console.log("Sending chat message:", content);
+      
       const userMessage: ChatMessage = {
         id: Date.now().toString(),
         content,
@@ -240,11 +225,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const updatedChat = [...chatHistory, userMessage];
       setChatHistory(updatedChat);
       
-      // Call AI service to get response
-      const aiResponse = await api.sendChatMessage(content);
+      const fullChatHistory = await api.sendChatMessage(content);
       
-      // Update chat history with AI response
-      setChatHistory(aiResponse);
+      setChatHistory(fullChatHistory);
+      
+      return fullChatHistory;
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
@@ -252,17 +237,16 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         description: 'Failed to send message',
         variant: 'destructive'
       });
+      throw error;
     }
   };
 
-  // Get total spent for a category
   const getCategoryTotal = (category: TransactionCategory): number => {
     return transactions
       .filter(t => t.category === category && !t.isIncome)
       .reduce((sum, t) => sum + t.amount, 0);
   };
 
-  // Refresh all data
   const refreshData = async () => {
     await loadData();
   };

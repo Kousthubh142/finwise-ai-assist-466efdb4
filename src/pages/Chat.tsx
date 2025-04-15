@@ -43,6 +43,24 @@ export default function Chat() {
       setIsSending(false);
     }
   };
+
+  const handleSampleQuestion = async (question: string) => {
+    if (isSending) return;
+    
+    setIsSending(true);
+    try {
+      await sendChatMessage(question);
+    } catch (error) {
+      console.error('Error sending sample question:', error);
+      toast({
+        title: "Couldn't send message",
+        description: "There was an error sending your message. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSending(false);
+    }
+  };
   
   return (
     <div className="mb-20 flex flex-col h-[calc(100vh-8rem)]">
@@ -71,28 +89,28 @@ export default function Chat() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-w-md">
                   <Button 
                     variant="outline"
-                    onClick={() => sendChatMessage("How can I improve my budget this month?")}
+                    onClick={() => handleSampleQuestion("How can I improve my budget this month?")}
                     disabled={isSending}
                   >
                     How can I improve my budget?
                   </Button>
                   <Button 
                     variant="outline"
-                    onClick={() => sendChatMessage("What are my biggest expenses?")}
+                    onClick={() => handleSampleQuestion("What are my biggest expenses?")}
                     disabled={isSending}
                   >
                     What are my biggest expenses?
                   </Button>
                   <Button 
                     variant="outline"
-                    onClick={() => sendChatMessage("How much should I save for my emergency fund?")}
+                    onClick={() => handleSampleQuestion("How much should I save for my emergency fund?")}
                     disabled={isSending}
                   >
                     How much should I save?
                   </Button>
                   <Button 
                     variant="outline"
-                    onClick={() => sendChatMessage("Tips for reducing my food expenses")}
+                    onClick={() => handleSampleQuestion("Tips for reducing my food expenses")}
                     disabled={isSending}
                   >
                     Tips for reducing expenses
@@ -104,6 +122,17 @@ export default function Chat() {
                 {chatHistory.map((message) => (
                   <ChatBubble key={message.id} message={message} />
                 ))}
+                {isSending && (
+                  <div className="flex justify-start mb-4">
+                    <div className="bg-muted text-foreground rounded-lg rounded-tl-none p-3 max-w-[80%]">
+                      <div className="flex items-center space-x-2">
+                        <div className="h-3 w-3 bg-primary rounded-full animate-bounce"></div>
+                        <div className="h-3 w-3 bg-primary rounded-full animate-bounce delay-100"></div>
+                        <div className="h-3 w-3 bg-primary rounded-full animate-bounce delay-200"></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <div ref={messagesEndRef} />
               </div>
             )}
