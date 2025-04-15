@@ -26,7 +26,7 @@ class GroqService {
     // Start with system message
     const formattedMessages: GroqMessage[] = [
       {
-        role: 'system' as Role,
+        role: 'system',
         content: this.systemPrompt
       }
     ];
@@ -34,7 +34,7 @@ class GroqService {
     // Add conversation history
     history.forEach(message => {
       formattedMessages.push({
-        role: message.sender === 'user' ? 'user' as Role : 'assistant' as Role,
+        role: message.sender === 'user' ? 'user' : 'assistant',
         content: message.content
       });
     });
