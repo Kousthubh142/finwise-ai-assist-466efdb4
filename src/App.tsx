@@ -9,6 +9,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { FinanceProvider } from "@/context/FinanceContext";
 import { LayoutWrapper } from "@/components/LayoutWrapper";
 import PrivateRoute from "@/components/PrivateRoute";
+import Index from "./pages/Index";
 
 // Pages
 import Login from "./pages/Login";
@@ -26,12 +27,12 @@ const queryClient = new QueryClient();
 const App = () => (
   <ThemeProvider defaultTheme="light">
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <FinanceProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
+      <BrowserRouter>
+        <AuthProvider>
+          <FinanceProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/onboarding" element={<Onboarding />} />
@@ -69,13 +70,13 @@ const App = () => (
                   } />
                 </Route>
                 
-                {/* Redirect root to login if not authenticated */}
+                <Route path="/index" element={<Index />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
-        </FinanceProvider>
-      </AuthProvider>
+            </TooltipProvider>
+          </FinanceProvider>
+        </AuthProvider>
+      </BrowserRouter>
     </QueryClientProvider>
   </ThemeProvider>
 );

@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../models/user';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,11 +27,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
+      (event, newSession) => {
         setSession(newSession);
         if (newSession?.user) {
           // We need to fetch the user profile data
-          await fetchUserProfile(newSession.user.id);
+          // Use setTimeout to avoid potential auth deadlocks
+          setTimeout(() => {
+            fetchUserProfile(newSession.user.id);
+          }, 0);
         } else {
           setUser(null);
         }
@@ -38,10 +42,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     // Initial session check
-    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
       if (currentSession?.user) {
-        await fetchUserProfile(currentSession.user.id);
+        fetchUserProfile(currentSession.user.id);
       } else {
         setIsLoading(false);
       }
