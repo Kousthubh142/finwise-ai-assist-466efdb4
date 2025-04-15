@@ -1,9 +1,9 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../models/user';
 import { supabase } from '@/integrations/supabase/client';
 import { Session } from '@supabase/supabase-js';
 import { useToast } from '@/components/ui/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 type AuthContextType = {
   user: User | null;
@@ -21,17 +21,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, newSession) => {
+      async (event, newSession) => {
         setSession(newSession);
         if (newSession?.user) {
           // We need to fetch the user profile data
-          setTimeout(() => {
-            fetchUserProfile(newSession.user.id);
-          }, 0);
+          await fetchUserProfile(newSession.user.id);
         } else {
           setUser(null);
         }
@@ -39,10 +38,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     // Initial session check
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
       setSession(currentSession);
       if (currentSession?.user) {
-        fetchUserProfile(currentSession.user.id);
+        await fetchUserProfile(currentSession.user.id);
       } else {
         setIsLoading(false);
       }
@@ -64,6 +63,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) throw error;
 
       if (data) {
+        // Check if user needs onboarding
+        const needsOnboarding = !data.monthly_income || !data.risk_tolerance || !data.financial_goals?.length;
+        
         // Ensure we correctly convert the risk_tolerance to the expected union type
         const riskTolerance = data.risk_tolerance as 'low' | 'medium' | 'high';
         
@@ -75,9 +77,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           riskTolerance: riskTolerance,
           financialGoals: data.financial_goals || [],
           avatarUrl: data.avatar_url,
-          createdAt: new Date(data.created_at)
+          createdAt: new Date(data.created_at),
+          needsOnboarding: needsOnboarding
         };
         setUser(userData);
+
+        // If user needs onboarding, redirect to onboarding page
+        if (needsOnboarding) {
+          navigate('/onboarding');
+        }
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
@@ -167,7 +175,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: !!user,
+        isAuthenticated: !!user && !user.needsOnboarding,
         isLoading,
         login,
         register,

@@ -9,4 +9,5 @@ export interface User {
   avatarUrl?: string;
   createdAt: Date;
   password?: string; // Used only during registration
+  needsOnboarding?: boolean; // New flag to indicate if user needs onboarding
 }
