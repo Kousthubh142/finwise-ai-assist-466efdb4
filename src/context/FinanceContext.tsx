@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Transaction, TransactionCategory } from '../models/transaction';
 import { Budget, BudgetSummary } from '../models/budget';
@@ -19,7 +20,7 @@ type FinanceContextType = {
   createBudget: (budget: Partial<Budget>) => Promise<void>;
   createSavingsGoal: (goal: Partial<SavingsGoal>) => Promise<void>;
   updateSavingsGoal: (goalId: string, amount: number) => Promise<void>;
-  sendChatMessage: (content: string) => Promise<void>;
+  sendChatMessage: (content: string) => Promise<ChatMessage[]>;
   refreshData: () => Promise<void>;
   getCategoryTotal: (category: TransactionCategory) => number;
 };
