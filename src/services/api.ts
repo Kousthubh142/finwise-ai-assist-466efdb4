@@ -1,3 +1,4 @@
+
 import { User } from '@/models/user';
 import { Transaction, TransactionCategory } from '@/models/transaction';
 import { Budget } from '@/models/budget';
@@ -67,6 +68,48 @@ const mapUser = (profileData: any, userData: any): User => ({
   createdAt: new Date(profileData.created_at)
 });
 
+// Utility function to map app transaction to database transaction
+const mapTransactionToDb = (transaction: Partial<Transaction>, userId: string) => {
+  return {
+    user_id: userId,
+    date: transaction.date?.toISOString() || new Date().toISOString(),
+    amount: transaction.amount || 0,
+    category: transaction.category || 'food',
+    description: transaction.description || '',
+    is_income: transaction.isIncome || false,
+    is_recurring: transaction.isRecurring || false,
+    recurring_frequency: transaction.recurringFrequency
+  };
+};
+
+// Utility function to map app budget to database budget
+const mapBudgetToDb = (budget: Partial<Budget>, userId: string) => {
+  return {
+    user_id: userId,
+    category: budget.category || 'food',
+    budget_limit: budget.limit || 0,
+    period: budget.period || 'monthly',
+    start_date: budget.startDate?.toISOString() || new Date().toISOString(),
+    is_active: budget.isActive !== undefined ? budget.isActive : true,
+    current_spent: budget.currentSpent || 0
+  };
+};
+
+// Utility function to map app savings goal to database savings goal
+const mapSavingsGoalToDb = (goal: Partial<SavingsGoal>, userId: string) => {
+  return {
+    user_id: userId,
+    name: goal.name || 'New Goal',
+    target_amount: goal.targetAmount || 0,
+    current_amount: goal.currentAmount || 0,
+    deadline: goal.deadline?.toISOString(),
+    category: goal.category || 'other',
+    priority: goal.priority || 'medium',
+    is_completed: goal.isCompleted || false,
+    image_url: goal.imageUrl
+  };
+};
+
 // AI Service using Groq API
 class AIService {
   async generateFinancialInsight(userFinancialData: any): Promise<AiTip> {
@@ -77,11 +120,11 @@ class AIService {
     // In production, we'll use the Groq API with the user's financial data
     const messages = [
       {
-        role: 'system',
+        role: 'system' as const,
         content: 'You are a financial advisor. Analyze the user\'s financial data and provide one specific, actionable insight.'
       },
       {
-        role: 'user',
+        role: 'user' as const,
         content: `Generate a financial insight about ${randomCategory} based on my financial data.`
       }
     ];
@@ -105,7 +148,7 @@ class AIService {
     
     // Add the user's latest message
     formattedMessages.push({
-      role: 'user',
+      role: 'user' as const,
       content: message
     });
     
@@ -203,16 +246,7 @@ export const api = {
       const user = (await supabase.auth.getUser()).data.user;
       if (!user) throw new Error('User not authenticated');
       
-      const newTransaction = {
-        user_id: user.id,
-        date: transaction.date || new Date(),
-        amount: transaction.amount || 0,
-        category: transaction.category || 'food',
-        description: transaction.description || '',
-        is_income: transaction.isIncome || false,
-        is_recurring: transaction.isRecurring || false,
-        recurring_frequency: transaction.recurringFrequency
-      };
+      const newTransaction = mapTransactionToDb(transaction, user.id);
       
       const { data, error } = await supabase
         .from('transactions')
@@ -256,15 +290,7 @@ export const api = {
       const user = (await supabase.auth.getUser()).data.user;
       if (!user) throw new Error('User not authenticated');
       
-      const newBudget = {
-        user_id: user.id,
-        category: budget.category || 'food',
-        budget_limit: budget.limit || 0,
-        period: budget.period || 'monthly',
-        start_date: new Date(),
-        is_active: true,
-        current_spent: 0
-      };
+      const newBudget = mapBudgetToDb(budget, user.id);
       
       const { data, error } = await supabase
         .from('budgets')
@@ -308,17 +334,7 @@ export const api = {
       const user = (await supabase.auth.getUser()).data.user;
       if (!user) throw new Error('User not authenticated');
       
-      const newGoal = {
-        user_id: user.id,
-        name: goal.name || 'New Goal',
-        target_amount: goal.targetAmount || 0,
-        current_amount: 0,
-        deadline: goal.deadline,
-        is_completed: false,
-        category: goal.category || 'other',
-        priority: goal.priority || 'medium',
-        image_url: goal.imageUrl
-      };
+      const newGoal = mapSavingsGoalToDb(goal, user.id);
       
       const { data, error } = await supabase
         .from('savings_goals')
