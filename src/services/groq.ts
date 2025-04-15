@@ -14,7 +14,7 @@ class GroqService {
   private apiKey: string | null = null;
   private model = 'llama3-70b-8192';  // Default model
   private apiUrl = 'https://api.groq.com/openai/v1/chat/completions';
-  private systemPrompt = 'You are a helpful financial assistant. You provide advice on budgeting, savings, investments, and general financial planning. Your responses should be concise, practical, and tailored to the user\'s financial situation.';
+  private systemPrompt = 'You are a helpful financial assistant. You provide advice on budgeting, savings, investments, and general financial planning. Your responses should be concise, practical, and tailored to the user\'s financial situation. Include specific numbers and percentages when possible to make your advice more concrete.';
 
   constructor() {
     // For demo purposes, we're using a hardcoded API key

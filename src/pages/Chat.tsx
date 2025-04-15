@@ -47,6 +47,7 @@ export default function Chat() {
   const handleSampleQuestion = async (question: string) => {
     if (isSending) return;
     
+    setMessage(question); // Set the question in the input field
     setIsSending(true);
     try {
       await sendChatMessage(question);
@@ -59,6 +60,7 @@ export default function Chat() {
       });
     } finally {
       setIsSending(false);
+      setMessage(''); // Clear the input field after sending
     }
   };
   
@@ -81,7 +83,7 @@ export default function Chat() {
           <div>
             {chatHistory.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full">
-                <MessageSquare className="h-16 w-16 text-primary/50 mb-4" />
+                <Bot className="h-16 w-16 text-primary/50 mb-4" />
                 <h3 className="text-lg font-medium mb-2">Ask me anything about your finances</h3>
                 <p className="text-muted-foreground text-center max-w-md mb-6">
                   I can help with budget advice, savings tips, analyzing your spending habits, and more.
@@ -147,10 +149,10 @@ export default function Chat() {
             placeholder="Ask anything about your finances..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            disabled={isSending}
+            disabled={isSending || isLoading}
             className="flex-1"
           />
-          <Button type="submit" disabled={isSending || !message.trim()}>
+          <Button type="submit" disabled={isSending || isLoading || !message.trim()}>
             {isSending ? (
               <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
             ) : (

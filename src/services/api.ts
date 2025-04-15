@@ -116,15 +116,54 @@ class AIService {
     const categories: TipCategory[] = ['savings', 'budgeting', 'spending', 'investing', 'debt', 'goals'];
     const randomCategory = categories[Math.floor(Math.random() * categories.length)];
     
+    // Generate prompt based on user's actual financial data
+    let insightPrompt = `Generate a financial insight about ${randomCategory} based on the following data:\n`;
+    
+    if (userFinancialData.transactions?.length > 0) {
+      const totalSpent = userFinancialData.transactions
+        .filter((t: any) => !t.isIncome)
+        .reduce((sum: number, t: any) => sum + t.amount, 0);
+      
+      insightPrompt += `- Total spending: ${totalSpent}\n`;
+      
+      // Add category breakdown if available
+      const categorySpending: Record<string, number> = {};
+      userFinancialData.transactions
+        .filter((t: any) => !t.isIncome)
+        .forEach((t: any) => {
+          categorySpending[t.category] = (categorySpending[t.category] || 0) + t.amount;
+        });
+      
+      for (const [category, amount] of Object.entries(categorySpending)) {
+        insightPrompt += `- ${category.replace('_', ' ')} spending: ${amount}\n`;
+      }
+    }
+    
+    if (userFinancialData.budgets?.length > 0) {
+      insightPrompt += `- Budget information: ${userFinancialData.budgets.length} budget categories\n`;
+      userFinancialData.budgets.forEach((b: any) => {
+        insightPrompt += `  - ${b.category.replace('_', ' ')} budget: limit ${b.limit}, spent ${b.currentSpent || 0}\n`;
+      });
+    }
+    
+    if (userFinancialData.savingsGoals?.length > 0) {
+      insightPrompt += `- Savings goals: ${userFinancialData.savingsGoals.length} goals\n`;
+      userFinancialData.savingsGoals.forEach((g: any) => {
+        insightPrompt += `  - ${g.name}: target ${g.targetAmount}, current ${g.currentAmount}, deadline: ${g.deadline || 'none'}\n`;
+      });
+    }
+    
+    insightPrompt += "\nProvide one specific, actionable financial insight that is personalized, data-driven, and helpful.";
+    
     // In production, we'll use the Groq API with the user's financial data
     const messages = [
       {
         role: 'system' as const,
-        content: 'You are a financial advisor. Analyze the user\'s financial data and provide one specific, actionable insight.'
+        content: 'You are a financial advisor. Analyze the user\'s financial data and provide one specific, actionable insight. Be concise and practical.'
       },
       {
         role: 'user' as const,
-        content: `Generate a financial insight about ${randomCategory} based on my financial data.`
+        content: insightPrompt
       }
     ];
     
@@ -132,7 +171,7 @@ class AIService {
     
     return {
       id: Date.now().toString(),
-      userId: sessionStore.transactions.length > 0 ? sessionStore.transactions[0].userId : '123',
+      userId: userFinancialData.userId || 'user123',
       content,
       category: randomCategory,
       createdAt: new Date(),
@@ -141,9 +180,75 @@ class AIService {
     };
   }
   
-  async getAIResponse(message: string, chatHistory: ChatMessage[]): Promise<string> {
+  async getAIResponse(message: string, chatHistory: ChatMessage[], userFinancialData: any): Promise<string> {
+    // Augment the system prompt with user's financial data
+    let systemPrompt = 'You are a helpful financial assistant. ';
+    
+    if (userFinancialData) {
+      systemPrompt += 'Here is the user\'s financial information:\n';
+      
+      if (userFinancialData.transactions?.length > 0) {
+        const income = userFinancialData.transactions
+          .filter((t: any) => t.isIncome)
+          .reduce((sum: number, t: any) => sum + t.amount, 0);
+          
+        const expenses = userFinancialData.transactions
+          .filter((t: any) => !t.isIncome)
+          .reduce((sum: number, t: any) => sum + t.amount, 0);
+          
+        systemPrompt += `- Monthly income: approximately ${income}\n`;
+        systemPrompt += `- Monthly expenses: approximately ${expenses}\n`;
+        
+        // Add top spending categories
+        const categorySpending: Record<string, number> = {};
+        userFinancialData.transactions
+          .filter((t: any) => !t.isIncome)
+          .forEach((t: any) => {
+            categorySpending[t.category] = (categorySpending[t.category] || 0) + t.amount;
+          });
+        
+        const topCategories = Object.entries(categorySpending)
+          .sort((a, b) => (b[1] as number) - (a[1] as number))
+          .slice(0, 3);
+          
+        systemPrompt += "- Top spending categories:\n";
+        topCategories.forEach(([category, amount]) => {
+          systemPrompt += `  - ${category.replace('_', ' ')}: ${amount}\n`;
+        });
+      }
+      
+      if (userFinancialData.budgets?.length > 0) {
+        systemPrompt += "- Budget information:\n";
+        userFinancialData.budgets.forEach((b: any) => {
+          const percentUsed = b.limit > 0 ? ((b.currentSpent || 0) / b.limit) * 100 : 0;
+          systemPrompt += `  - ${b.category.replace('_', ' ')}: ${percentUsed.toFixed(0)}% of budget used (${b.currentSpent || 0} of ${b.limit})\n`;
+        });
+      }
+      
+      if (userFinancialData.savingsGoals?.length > 0) {
+        systemPrompt += "- Saving goals:\n";
+        userFinancialData.savingsGoals.forEach((g: any) => {
+          const percentComplete = g.targetAmount > 0 ? (g.currentAmount / g.targetAmount) * 100 : 0;
+          systemPrompt += `  - ${g.name}: ${percentComplete.toFixed(0)}% complete (${g.currentAmount} of ${g.targetAmount})\n`;
+        });
+      }
+    }
+    
+    systemPrompt += "\nProvide personalized, data-driven financial advice based on this information. Be concise, practical, and specific.";
+    
     // Format the messages for the Groq API
-    const formattedMessages = groqService.formatChatHistory(chatHistory);
+    const formattedMessages = [{
+      role: 'system' as const,
+      content: systemPrompt
+    }];
+    
+    // Add chat history
+    chatHistory.forEach(msg => {
+      formattedMessages.push({
+        role: msg.sender === 'user' ? 'user' as const : 'assistant' as const,
+        content: msg.content
+      });
+    });
     
     // Add the user's latest message
     formattedMessages.push({
@@ -415,9 +520,16 @@ export const api = {
     } catch (error) {
       console.error('Error fetching AI tips:', error);
       
-      // If no tips are available, generate one
+      // If no tips are available, generate one with actual user data
       if (sessionStore.aiTips.length === 0) {
-        const newTip = await aiService.generateFinancialInsight({});
+        const userData = {
+          userId: sessionStore.transactions.length > 0 ? sessionStore.transactions[0].userId : 'user123',
+          transactions: sessionStore.transactions,
+          budgets: sessionStore.budgets,
+          savingsGoals: sessionStore.savingsGoals
+        };
+        
+        const newTip = await aiService.generateFinancialInsight(userData);
         sessionStore.aiTips = [newTip];
       }
       
@@ -428,7 +540,6 @@ export const api = {
   // Chat functionality
   getChatHistory: async (): Promise<ChatMessage[]> => {
     // For now, we'll store chat history in memory
-    // In a future version, we could store this in Supabase
     return sessionStore.chatHistory;
   },
   
@@ -448,11 +559,16 @@ export const api = {
       // Create temporary history with the new user message
       const updatedHistory = [...currentHistory, userMessage];
       
-      // Format messages for Groq API
-      const formattedMessages = groqService.formatChatHistory(updatedHistory);
+      // Prepare user financial data for context
+      const userData = {
+        userId: sessionStore.transactions.length > 0 ? sessionStore.transactions[0].userId : 'user123',
+        transactions: sessionStore.transactions,
+        budgets: sessionStore.budgets,
+        savingsGoals: sessionStore.savingsGoals
+      };
       
       // Get AI response using the Groq API
-      const aiResponse = await groqService.getChatCompletion(formattedMessages);
+      const aiResponse = await aiService.getAIResponse(content, updatedHistory, userData);
       
       // Create AI message
       const aiMessage: ChatMessage = {
@@ -466,9 +582,9 @@ export const api = {
       const finalUpdatedChat = [...updatedHistory, aiMessage];
       sessionStore.chatHistory = finalUpdatedChat;
       
-      // Generate a new AI tip based on the conversation
-      if (Math.random() > 0.7) {  // 30% chance to generate a new tip
-        const newTip = await aiService.generateFinancialInsight({});
+      // Generate a new AI tip based on the conversation (30% chance)
+      if (Math.random() > 0.7) {
+        const newTip = await aiService.generateFinancialInsight(userData);
         
         try {
           const user = (await supabase.auth.getUser()).data.user;
@@ -506,8 +622,15 @@ export const api = {
         api.getChatHistory()
       ]);
       
-      // Generate a new AI tip
-      const newTip = await aiService.generateFinancialInsight({});
+      // Generate a new AI tip with actual user data
+      const userData = {
+        userId: sessionStore.transactions.length > 0 ? sessionStore.transactions[0].userId : 'user123',
+        transactions: sessionStore.transactions,
+        budgets: sessionStore.budgets,
+        savingsGoals: sessionStore.savingsGoals
+      };
+      
+      const newTip = await aiService.generateFinancialInsight(userData);
       
       try {
         const user = (await supabase.auth.getUser()).data.user;
